@@ -125,6 +125,13 @@ function appendJoined(parent, nodes, sep) {
   });
 }
 
+/* Strips {word, type} tag syntax down to plain "word" text, for use in a
+   title="" attribute (which can't render colored spans like glossFragment
+   does — just plain text). */
+function glossPlainText(text) {
+  return (text || "").replace(/\{([^{},]+),\s*([^{}]+)\}/g, (_, word) => word.trim());
+}
+
 function keyDisplay(key) {
   const translated = translateToGayogohono(key);
   return translated !== key ? `'${key}' (${translated})` : `'${key}'`;
@@ -139,10 +146,14 @@ function buildColoredParticlesWord(particleKeys) {
   for (const pkey of particleKeys) {
     const p = state.particles[pkey];
     if (!p) {
-      frag.appendChild(coloredSpan(translateToGayogohono(pkey), "unknown"));
+      const span = coloredSpan(translateToGayogohono(pkey), "unknown");
+      span.title = `missing particle: ${pkey}`;
+      frag.appendChild(span);
       continue;
     }
-    frag.appendChild(coloredSpan(translateToGayogohono(p.text), p.type));
+    const span = coloredSpan(translateToGayogohono(p.text), p.type);
+    span.title = `${p.type}: ${glossPlainText(p.meaning)}`;
+    frag.appendChild(span);
   }
   return frag;
 }

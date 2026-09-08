@@ -141,6 +141,12 @@ main { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
   margin-bottom: 0.6rem;
   word-break: break-word;
 }
+.result-headword span[title] {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+}
 .result-line {
   font-family: var(--sans);
   font-size: 0.92rem;
