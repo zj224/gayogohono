@@ -15,7 +15,7 @@ shown with its own particles colored.
 import json
 import os
 
-from shorthands import translate_to_gayogohono
+from shorthands import translate_to_gayogohono, color_english_text, strip_devoicing
 
 # ---------------------------------------------------------------------------
 # File locations
@@ -202,11 +202,18 @@ def add_particle(key: str, text: str, meaning, ptype: str, notes: str = "",
         ptype    -- grammatical type, e.g. "noun", "verb", "pronoun" ...
         notes    -- free-form notes, e.g. usage caveats, variants, sources
 
+    `key` and `text` are normalized to their non-devoiced form before
+    saving (see strip_devoicing() in shorthands.py) -- devoicing depends on
+    a vowel's position in the whole word, not on the particle itself.
+
     If `key` already exists, this refuses to overwrite it -- it prints
     what's currently on file and tells you to use update_particle() instead.
     """
     if particles is None:
         particles = load_particles()
+
+    key = strip_devoicing(key)
+    text = strip_devoicing(text)
 
     if _already_exists(particles, key, "Particle", "update_particle()"):
         return particles
@@ -237,10 +244,16 @@ def update_particle(key: str, text: str = "", meaning="", ptype: str = "", notes
                     strings to replace the primary meaning AND "meanings"
                     entirely (not merged with what was there before)
 
+    `key` and `text` are normalized to their non-devoiced form before
+    saving (see strip_devoicing() in shorthands.py).
+
     If `key` doesn't exist yet, this tells you to use add_particle() instead.
     """
     if particles is None:
         particles = load_particles()
+
+    key = strip_devoicing(key)
+    text = strip_devoicing(text)
 
     if _not_found(particles, key, "particle", "add_particle()"):
         return particles
@@ -278,11 +291,19 @@ def add_word(key: str, word: str, meaning, wtype: str,
                           in the order they combine to form the word
         notes          -- free-form notes, e.g. usage caveats, variants, sources
 
+    Each entry in `particle_keys` is normalized to its non-devoiced form
+    (see strip_devoicing() in shorthands.py), since particles are always
+    keyed by their non-devoiced vowel -- so a devoiced particle key
+    (e.g. copied from the word's own devoiced spelling) still resolves to
+    the right particle.
+
     If `key` already exists, this refuses to overwrite it -- it prints
     what's currently on file and tells you to use update_word() instead.
     """
     if words is None:
         words = load_words()
+
+    particle_keys = [strip_devoicing(pkey) for pkey in particle_keys]
 
     if _already_exists(words, key, "Word", "update_word()"):
         return words
@@ -315,12 +336,16 @@ def update_word(key: str, word: str = "", meaning="", wtype: str = "",
                     strings to replace the primary meaning AND "meanings"
                     entirely (not merged with what was there before)
 
+    Each entry in `particle_keys` is normalized to its non-devoiced form
+    (see strip_devoicing() in shorthands.py) before saving.
+
     If `key` doesn't exist yet, this tells you to use add_word() instead.
     """
     if words is None:
         words = load_words()
     if particle_keys is None:
         particle_keys = []
+    particle_keys = [strip_devoicing(pkey) for pkey in particle_keys]
 
     if _not_found(words, key, "word", "add_word()"):
         return words
@@ -343,7 +368,7 @@ def update_word(key: str, word: str = "", meaning="", wtype: str = "",
     return words
 
 
-def add_phrase(key: str, phrase: str, meaning, word_keys: list, notes: str = "",
+def add_phrase(key: str, phrase: str, meaning, word_keys: list = None, notes: str = "",
                phrases: dict = None, autosave: bool = True) -> dict:
     """
     Add a new phrase.
@@ -353,7 +378,9 @@ def add_phrase(key: str, phrase: str, meaning, word_keys: list, notes: str = "",
                       of strings for several (the first becomes the
                       primary "meaning", the rest are added to "meanings")
         word_keys  -- list of word keys (must exist in words.json) in the
-                      order they combine to form the phrase
+                      order they combine to form the phrase. Leave unset
+                      (or pass an empty list) to auto-derive it by
+                      splitting `phrase` on whitespace.
         notes      -- free-form notes, e.g. usage caveats, variants, sources
 
     Unlike a word, a phrase has no grammatical type of its own -- it's
@@ -366,6 +393,9 @@ def add_phrase(key: str, phrase: str, meaning, word_keys: list, notes: str = "",
 
     if _already_exists(phrases, key, "Phrase", "update_phrase()"):
         return phrases
+
+    if not word_keys:
+        word_keys = phrase.split()
 
     primary, extras = _split_meaning(meaning)
     new_fields = {
@@ -389,14 +419,20 @@ def update_phrase(key: str, phrase: str = "", meaning="", word_keys: list = None
     """
     Update an existing phrase in place. Leave any argument at its default
     ("" / []) to keep the value already on file for that field.
-        meaning  -- a string to replace the primary meaning, or a list of
-                    strings to replace the primary meaning AND "meanings"
-                    entirely (not merged with what was there before)
+        meaning    -- a string to replace the primary meaning, or a list of
+                      strings to replace the primary meaning AND "meanings"
+                      entirely (not merged with what was there before)
+        word_keys  -- if left unset while `phrase` is being changed, this
+                      is auto-derived by splitting the new `phrase` on
+                      whitespace; if `phrase` is also left unset, the
+                      existing word_keys on file are kept as-is
 
     If `key` doesn't exist yet, this tells you to use add_phrase() instead.
     """
     if phrases is None:
         phrases = load_phrases()
+    if not word_keys and phrase:
+        word_keys = phrase.split()
     if word_keys is None:
         word_keys = []
 
@@ -562,7 +598,7 @@ def _colored_particles_text(particle_keys: list, particles: dict) -> tuple:
         c = color_for(p["type"])
         text = translate_to_gayogohono(p["text"])
         colored += f"{c}{text}{RESET}"
-        pieces.append(f"{c}{text}{RESET} ({p['type']}: {p['meaning']})")
+        pieces.append(f"{c}{text}{RESET} ({p['type']}: {color_english_text(p['meaning'])})")
     return colored, pieces
 
 
@@ -613,9 +649,9 @@ def lookup_word(key: str, particles: dict = None, words: dict = None) -> None:
         # No particle breakdown available -- fall back to word-type color
         c = color_for(entry["type"])
         print(f"{c}{translate_to_gayogohono(entry['word'])}{RESET}")
-        print(f"  meaning: {entry['meaning']}")
+        print(f"  meaning: {color_english_text(entry['meaning'])}")
         if entry.get("meanings"):
-            print("  also: " + "; ".join(entry["meanings"]))
+            print("  also: " + "; ".join(color_english_text(m) for m in entry["meanings"]))
         if entry.get("notes"):
             print(f"  notes: {entry['notes']}")
         if entry.get("examples"):
@@ -628,9 +664,9 @@ def lookup_word(key: str, particles: dict = None, words: dict = None) -> None:
 
     print(colored_word)
     #print(f"  spelled: {translate_to_gayogohono(entry['word'])}  ({entry['type']})")
-    print(f"  meaning: {entry['meaning']}")
+    print(f"  meaning: {color_english_text(entry['meaning'])}")
     if entry.get("meanings"):
-        print("  also: " + "; ".join(entry["meanings"]))
+        print("  also: " + "; ".join(color_english_text(m) for m in entry["meanings"]))
     print("  made of: " + " + ".join(pieces))
     if entry.get("notes"):
         print(f"  notes: {entry['notes']}")
@@ -655,9 +691,9 @@ def lookup_particle(key: str, particles: dict = None) -> None:
     c = color_for(p["type"])
     print(f"{c}{translate_to_gayogohono(p['text'])}{RESET}")
     print(f"  type: {p['type']}")
-    print(f"  meaning: {p['meaning']}")
+    print(f"  meaning: {c}{color_english_text(p['meaning'])}{RESET}")
     if p.get("meanings"):
-        print("  also: " + "; ".join(p["meanings"]))
+        print("  also: " + "; ".join(f"{c}{color_english_text(m)}{RESET}" for m in p["meanings"]))
     if p.get("notes"):
         print(f"  notes: {p['notes']}")
     if p.get("examples"):
@@ -692,9 +728,9 @@ def lookup_phrase(key: str, particles: dict = None, words: dict = None, phrases:
 
     if not word_keys:
         print(translate_to_gayogohono(entry["phrase"]))
-        print(f"  meaning: {entry['meaning']}")
+        print(f"  meaning: {color_english_text(entry['meaning'])}")
         if entry.get("meanings"):
-            print("  also: " + "; ".join(entry["meanings"]))
+            print("  also: " + "; ".join(color_english_text(m) for m in entry["meanings"]))
         if entry.get("notes"):
             print(f"  notes: {entry['notes']}")
         if entry.get("examples"):
@@ -712,13 +748,13 @@ def lookup_phrase(key: str, particles: dict = None, words: dict = None, phrases:
         if w is None:
             breakdown_pieces.append(f"{rendered} (missing word: {wkey})")
         else:
-            breakdown_pieces.append(f"{rendered} ({w['meaning']})")
+            breakdown_pieces.append(f"{rendered} ({color_english_text(w['meaning'])})")
 
     print(" ".join(colored_pieces))
     print(f"  spelled: {translate_to_gayogohono(entry['phrase'])}")
-    print(f"  meaning: {entry['meaning']}")
+    print(f"  meaning: {color_english_text(entry['meaning'])}")
     if entry.get("meanings"):
-        print("  also: " + "; ".join(entry["meanings"]))
+        print("  also: " + "; ".join(color_english_text(m) for m in entry["meanings"]))
     print("  made of: " + " + ".join(breakdown_pieces))
     if entry.get("notes"):
         print(f"  notes: {entry['notes']}")

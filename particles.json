@@ -1,0 +1,56 @@
+{
+  "ak": {
+    "meaning": "I",
+    "notes": "",
+    "text": "ak",
+    "type": "pronoun"
+  },
+  "g": {
+    "meaning": "{I, pronoun}",
+    "notes": "",
+    "text": "g",
+    "type": "pronoun"
+  },
+  "ga{on}hy{a!}": {
+    "meaning": "sky",
+    "notes": {},
+    "text": "ga{on}hy{a!}",
+    "type": "noun"
+  },
+  "g{en}h": {
+    "meaning": "?",
+    "notes": "",
+    "text": "g{en}h",
+    "type": "particle"
+  },
+  "ne:{?}hni{?}": {
+    "meaning": "and",
+    "notes": {},
+    "text": "ne:{?}hni{?}",
+    "type": "conjunction"
+  },
+  "s": {
+    "meaning": "{you, pronoun}",
+    "notes": "",
+    "text": "s",
+    "type": "pronoun"
+  },
+  "sa": {
+    "meaning": "you",
+    "notes": "",
+    "text": "sa",
+    "type": "pronoun"
+  },
+  "t{en}{?} d{?}e": {
+    "meaning": "no",
+    "notes": "",
+    "text": "t{en}{?} d{?}e",
+    "type": "adverb"
+  },
+  "{en}h{en}:{?}": {
+    "meaning": "yes",
+    "notes": "",
+    "text": "{en}h{en}:{?}",
+    "type": "adverb"
+  }
+}

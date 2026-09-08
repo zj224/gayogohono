@@ -1,0 +1,94 @@
+{
+  "gaeya{?}dag{en!}:nha{?}": {
+    "meaning": "parent",
+    "notes": {},
+    "particles": [],
+    "type": "noun",
+    "word": "gaeya{?}dag{en!}:nha{?}"
+  },
+  "ga{on}hy{a!}geh": {
+    "meaning": "Sky People",
+    "notes": {},
+    "particles": [
+      "ga{on}hy{a!}",
+      "geh"
+    ],
+    "type": "noun",
+    "word": "ga{on}hy{a!}geh"
+  },
+  "g{en}h": {
+    "meaning": "?",
+    "notes": "",
+    "particles": [
+      "g{en}h"
+    ],
+    "type": "particle",
+    "word": "g{en}h"
+  },
+  "ne:{?}hni{?}": {
+    "meaning": "and",
+    "notes": {},
+    "particles": [
+      "ne:{?}hni{?}"
+    ],
+    "type": "conjunction",
+    "word": "ne:{?}hni{?}"
+  },
+  "nigaw{en}n{o!}{?}d{en}:": {
+    "meaning": "the language",
+    "notes": "",
+    "particles": "",
+    "type": "noun",
+    "word": "nigaw{en}n{o!}{?}d{en}:"
+  },
+  "sa{?}nig{on-}ha{en}dea{?}s": {
+    "meaning": "",
+    "notes": "",
+    "particles": [
+      "sa",
+      "{?}nig{on-}ha{en}dea{?}s"
+    ],
+    "type": "",
+    "word": "sa{?}nig{on-}ha{en}dea{?}s"
+  },
+  "t{en}{?} d{?}e": {
+    "meaning": "no",
+    "notes": "",
+    "particles": [
+      "t{en}{?} d{?}e"
+    ],
+    "type": "adverb",
+    "word": "t{en}{?} d{?}e"
+  },
+  "{en}:gi{?}": {
+    "meaning": "",
+    "notes": "",
+    "particles": [
+      "{en}:",
+      "g",
+      "i{?}"
+    ],
+    "type": "",
+    "word": "{en}:gi{?}"
+  },
+  "{en}hsi{?}": {
+    "meaning": "",
+    "notes": "",
+    "particles": [
+      "{en}h",
+      "s",
+      "i{?}"
+    ],
+    "type": "",
+    "word": "{en}hsi{?}"
+  },
+  "{en}h{en}:{?}": {
+    "meaning": "yes",
+    "notes": "",
+    "particles": [
+      "{en}h{en}:{?}"
+    ],
+    "type": "adverb",
+    "word": "{en}h{en}:{?}"
+  }
+}
