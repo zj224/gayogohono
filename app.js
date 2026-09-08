@@ -147,12 +147,12 @@ function buildColoredParticlesWord(particleKeys) {
     const p = state.particles[pkey];
     if (!p) {
       const span = coloredSpan(translateToGayogohono(pkey), "unknown");
-      span.title = `missing particle: ${pkey}`;
+      span.dataset.tooltip = `missing particle: ${pkey}`;
       frag.appendChild(span);
       continue;
     }
     const span = coloredSpan(translateToGayogohono(p.text), p.type);
-    span.title = `${p.type}: ${glossPlainText(p.meaning)}`;
+    span.dataset.tooltip = `${p.type}: ${glossPlainText(p.meaning)}`;
     frag.appendChild(span);
   }
   return frag;
@@ -765,6 +765,58 @@ function wirePublishPanel() {
 }
 
 /* --------------------------------------------------------------------- */
+/* Custom tooltips (data-tooltip="...") — more reliable than the native   */
+/* title attribute, which has an inconsistent hover delay across browsers */
+/* and doesn't work on touch at all.                                      */
+/* --------------------------------------------------------------------- */
+
+function initTooltips() {
+  const tip = document.createElement("div");
+  tip.className = "gyh-tooltip";
+  tip.hidden = true;
+  document.body.appendChild(tip);
+
+  function positionTip(target) {
+    const rect = target.getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - tipRect.width / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
+    let top = rect.top - tipRect.height - 8;
+    if (top < 8) top = rect.bottom + 8; // flip below if there's no room above
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+  }
+
+  function showTip(target) {
+    const text = target.dataset.tooltip;
+    if (!text) return;
+    tip.textContent = text;
+    tip.hidden = false;
+    positionTip(target);
+  }
+
+  function hideTip() {
+    tip.hidden = true;
+  }
+
+  document.addEventListener("mouseover", (e) => {
+    const target = e.target.closest("[data-tooltip]");
+    if (target) showTip(target);
+  });
+  document.addEventListener("mouseout", (e) => {
+    const target = e.target.closest("[data-tooltip]");
+    if (target) hideTip();
+  });
+  // Tap-to-toggle so this also works on touch devices, which have no hover.
+  document.addEventListener("click", (e) => {
+    const target = e.target.closest("[data-tooltip]");
+    if (!target) return hideTip();
+    if (tip.hidden) showTip(target);
+    else hideTip();
+  });
+}
+
+/* --------------------------------------------------------------------- */
 /* Boot                                                                   */
 /* --------------------------------------------------------------------- */
 
@@ -776,5 +828,6 @@ document.addEventListener("DOMContentLoaded", () => {
   wireAddWordForm();
   wireAddPhraseForm();
   wirePublishPanel();
+  initTooltips();
   initApp();
 });
