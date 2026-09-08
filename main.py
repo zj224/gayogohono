@@ -23,8 +23,9 @@ if __name__ == "__main__":
 
 #    "?": "ˀ",
     
-    # add_particle(key = "{en}h{en}:{?}", text = "{en}h{en}:{?}", meaning = "yes", ptype = "adverb")
-    # add_word(key = "{en}h{en}:{?}", word = "{en}h{en}:{?}", meaning = "yes", wtype = "adverb", particle_keys = ["{en}h{en}:{?}"])
+    # add_particle(key = "aknig{on}ha{en}da{?}s", text = "aknig{on}ha{en}da{?}s", meaning = "understand", ptype = "verb")
+    # add_word(key = "aknig{on}ha{en}da{?}s", word = "aknig{on}ha{en}da{?}s", meaning = "understand", wtype = "verb", particle_keys = ["aknig{on}ha{en}da{?}s"])
+    # add_word(key = "aknig{on-}ha{en}da{?}s", word = "aknig{on-}ha{en}da{?}s", meaning = "understand", wtype = "verb", particle_keys = ["aknig{on}ha{en}da{?}s"])
     # add_phrase(key = "{en}h{en}:{?} aknig{on-}ha{en}dea{?}s", phrase = "{en}h{en}:{?} aknig{on-}ha{en}dea{?}s", meaning = "Yes, {I, pronoun} understand.", word_keys = "")
 
     # add_particle(key = "t{en}{?} d{?}e", text = "t{en}{?} d{?}e", meaning = "no", ptype = "adverb")
@@ -35,4 +36,4 @@ if __name__ == "__main__":
     
     # lookup_word() 
     # lookup_particle("sa")
-    lookup_phrase("t{en}{?} d{?}eaknig{on}ha{en}dea{?}s")
+    lookup_phrase("d{en}{?}ho{?}d{en}{?} {en}:gi{?} ne{?}")

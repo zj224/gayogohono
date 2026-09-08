@@ -1,4 +1,24 @@
 {
+  "aknig{on-}ha{en}da{?}s": {
+    "meaning": "I understand",
+    "notes": "",
+    "particles": [
+      "ak",
+      "nig{on}ha{en}da{?}s"
+    ],
+    "type": "verb",
+    "word": "aknig{on-}ha{en}da{?}s"
+  },
+  "aknig{on}ha{en}da{?}s": {
+    "meaning": "I understand",
+    "notes": "",
+    "particles": [
+      "ak",
+      "nig{on}ha{en}da{?}s"
+    ],
+    "type": "verb",
+    "word": "aknig{on}ha{en}da{?}s"
+  },
   "gaeya{?}dag{en!}:nha{?}": {
     "meaning": "parent",
     "notes": {},
@@ -41,15 +61,15 @@
     "type": "noun",
     "word": "nigaw{en}n{o!}{?}d{en}:"
   },
-  "sa{?}nig{on-}ha{en}dea{?}s": {
-    "meaning": "",
+  "sa{?}nig{on-}ha{en}da{?}s": {
+    "meaning": "You understand",
     "notes": "",
     "particles": [
       "sa",
-      "{?}nig{on-}ha{en}dea{?}s"
+      "nig{on}ha{en}da{?}s"
     ],
     "type": "",
-    "word": "sa{?}nig{on-}ha{en}dea{?}s"
+    "word": "sa{?}nig{on-}ha{en}da{?}s"
   },
   "t{en}{?} d{?}e": {
     "meaning": "no",

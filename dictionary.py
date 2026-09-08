@@ -602,6 +602,25 @@ def _colored_particles_text(particle_keys: list, particles: dict) -> tuple:
     return colored, pieces
 
 
+def _particle_meaning_pieces(particle_keys: list, particles: dict) -> list:
+    """
+    Build a list of "text (meaning)" pieces for a list of particle keys,
+    color-coding each particle's text by its type -- like
+    _colored_particles_text()'s pieces, but without the type label, to
+    match the word-level "text (meaning)" breakdown format.
+    """
+    pieces = []
+    for pkey in particle_keys:
+        p = particles.get(pkey)
+        if p is None:
+            pieces.append(f"__ (missing particle: {pkey})")
+            continue
+        c = color_for(p["type"])
+        text = translate_to_gayogohono(p["text"])
+        pieces.append(f"{c}{text}{RESET} ({color_english_text(p['meaning'])})")
+    return pieces
+
+
 def _colored_word_text(word_key: str, particles: dict, words: dict) -> str:
     """
     Build the type-colored rendering of a whole word (by its particles),
@@ -711,6 +730,12 @@ def lookup_phrase(key: str, particles: dict = None, words: dict = None, phrases:
     lookup_word, just one level up. A word key that isn't in words.json
     renders in the default color; a phrase key that isn't in phrases.json
     just prints a "not found" message.
+
+    Two separate breakdown lines are printed: "made of" gives the
+    word-level breakdown (each word plus its own meaning), and "particles"
+    goes one level deeper, breaking each word into its own particles plus
+    their meanings (falling back to the word-level piece for any word with
+    no particle breakdown on file).
     """
     if particles is None:
         particles = load_particles()
@@ -741,21 +766,32 @@ def lookup_phrase(key: str, particles: dict = None, words: dict = None, phrases:
 
     colored_pieces = []
     breakdown_pieces = []
+    particle_breakdown_groups = []
     for wkey in word_keys:
         rendered = _colored_word_text(wkey, particles, words)
         colored_pieces.append(rendered)
         w = words.get(wkey)
         if w is None:
             breakdown_pieces.append(f"{rendered} (missing word: {wkey})")
+            particle_breakdown_groups.append(f"{rendered} (missing word: {wkey})")
+            continue
+
+        breakdown_pieces.append(f"{rendered} ({color_english_text(w['meaning'])})")
+
+        word_particle_keys = w.get("particles", [])
+        if word_particle_keys:
+            particle_breakdown_groups.append(
+                " ".join(_particle_meaning_pieces(word_particle_keys, particles)))
         else:
-            breakdown_pieces.append(f"{rendered} ({color_english_text(w['meaning'])})")
+            particle_breakdown_groups.append(f"{rendered} ({color_english_text(w['meaning'])})")
 
     print(" ".join(colored_pieces))
-    print(f"  spelled: {translate_to_gayogohono(entry['phrase'])}")
+    # print(f"  spelled: {translate_to_gayogohono(entry['phrase'])}")
     print(f"  meaning: {color_english_text(entry['meaning'])}")
     if entry.get("meanings"):
         print("  also: " + "; ".join(color_english_text(m) for m in entry["meanings"]))
     print("  made of: " + " + ".join(breakdown_pieces))
+    print("  particles: " + " + ".join(particle_breakdown_groups))
     if entry.get("notes"):
         print(f"  notes: {entry['notes']}")
     if entry.get("examples"):

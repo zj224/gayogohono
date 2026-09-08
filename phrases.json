@@ -25,31 +25,31 @@
       "ne{?}"
     ]
   },
-  "sa{?}nig{on-}ha{en}dea{?}s g{en}h": {
+  "sa{?}nig{on-}ha{en}da{?}s g{en}h": {
     "meaning": "Do {you, pronoun} understand?",
     "notes": "",
-    "phrase": "sa{?}nig{on-}ha{en}dea{?}s g{en}h",
+    "phrase": "sa{?}nig{on-}ha{en}da{?}s g{en}h",
     "words": [
-      "sa{?}nig{on-}ha{en}dea{?}s",
+      "sa{?}nig{on-}ha{en}da{?}s",
       "g{en}h"
     ]
   },
-  "t{en}{?} d{?}eaknig{on}ha{en}dea{?}s": {
+  "t{en}{?} d{?}eaknig{on}ha{en}da{?}s": {
     "meaning": "{No, adverb}, {I, pronoun} don't understand.",
     "notes": "",
-    "phrase": "t{en}{?} d{?}eaknig{on}ha{en}dea{?}s",
+    "phrase": "t{en}{?} d{?}eaknig{on}ha{en}da{?}s",
     "words": [
       "t{en}{?} d{?}e",
-      "aknig{on}ha{en}dea{?}s"
+      "aknig{on}ha{en}da{?}s"
     ]
   },
-  "{en}h{en}:{?} aknig{on-}ha{en}dea{?}s": {
+  "{en}h{en}:{?} aknig{on-}ha{en}da{?}s": {
     "meaning": "{Yes, adverb}, {I, pronoun} understand.",
     "notes": "",
-    "phrase": "{en}h{en}:{?} aknig{on-}ha{en}dea{?}s",
+    "phrase": "{en}h{en}:{?} aknig{on-}ha{en}da{?}s",
     "words": [
       "{en}h{en}:{?}",
-      "aknig{on-}ha{en}dea{?}s"
+      "aknig{on-}ha{en}da{?}s"
     ]
   }
 }
