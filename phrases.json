@@ -1,8 +1,8 @@
 {
   "d{en}{?}ho{?}d{en}{?} {en}:gi{?} ne{?}": {
-    "meaning": "How do {I, pronoun} say ...?",
+    "meaning": "How do I say ...?",
     "meanings": [
-      "What will {I, pronoun} say for ...?"
+      "What will I say for ...?"
     ],
     "notes": "",
     "phrase": "d{en}{?}ho{?}d{en}{?} {en}:gi{?} ne{?}",
@@ -13,9 +13,9 @@
     ]
   },
   "d{en}{?}ho{?}d{en}{?} {en}hsi{?} ne{?}": {
-    "meaning": "How do {you, pronoun} say ...?",
+    "meaning": "How do you say ...?",
     "meanings": [
-      "What will {you, pronoun} say for ...?"
+      "What will you say for ...?"
     ],
     "notes": "",
     "phrase": "d{en}{?}ho{?}d{en}{?} {en}hsi{?} ne{?}",
@@ -26,7 +26,7 @@
     ]
   },
   "sa{?}nig{on-}ha{en}da{?}s g{en}h": {
-    "meaning": "Do {you, pronoun} understand?",
+    "meaning": "Do you understand?",
     "notes": "",
     "phrase": "sa{?}nig{on-}ha{en}da{?}s g{en}h",
     "words": [
@@ -35,7 +35,7 @@
     ]
   },
   "t{en}{?} d{?}eaknig{on}ha{en}da{?}s": {
-    "meaning": "{No, adverb}, {I, pronoun} don't understand.",
+    "meaning": "No, I don't understand.",
     "notes": "",
     "phrase": "t{en}{?} d{?}eaknig{on}ha{en}da{?}s",
     "words": [
@@ -44,7 +44,7 @@
     ]
   },
   "{en}h{en}:{?} aknig{on-}ha{en}da{?}s": {
-    "meaning": "{Yes, adverb}, {I, pronoun} understand.",
+    "meaning": "Yes, I understand.",
     "notes": "",
     "phrase": "{en}h{en}:{?} aknig{on-}ha{en}da{?}s",
     "words": [
