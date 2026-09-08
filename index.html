@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gayogo̱hó:nǫˀ Lexicon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;1,400&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">◈</span>
+    <div>
+      <h1>Gayogo̱hó:nǫˀ Lexicon</h1>
+      <p class="brand-sub">particles · words · phrases</p>
+    </div>
+  </div>
+
+  <div class="sync-status" id="syncStatus">
+    <span class="dot" id="syncDot"></span>
+    <span id="syncText">loading…</span>
+  </div>
+
+  <button class="btn btn-ghost" id="openPublish" type="button">Publish to GitHub</button>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="lookup-particle" type="button">Lookup Particle</button>
+  <button class="tab" data-tab="lookup-word" type="button">Lookup Word</button>
+  <button class="tab" data-tab="lookup-phrase" type="button">Lookup Phrase</button>
+  <span class="tab-divider" aria-hidden="true"></span>
+  <button class="tab" data-tab="add-particle" type="button">Add Particle</button>
+  <button class="tab" data-tab="add-word" type="button">Add Word</button>
+  <button class="tab" data-tab="add-phrase" type="button">Add Phrase</button>
+</nav>
+
+<main>
+
+  <!-- ===================== LOOKUP PARTICLE ===================== -->
+  <section class="panel active" id="lookup-particle" data-panel>
+    <div class="panel-head">
+      <h2>Lookup particle</h2>
+      <p class="hint">Enter a particle key to see its text, type, and meaning.</p>
+    </div>
+    <form class="lookup-form" data-lookup="particle">
+      <input type="text" list="particleKeysList" name="key" placeholder="particle key, e.g. ak" autocomplete="off" required>
+      <button class="btn btn-accent" type="submit">Look up</button>
+    </form>
+    <div class="result" id="result-lookup-particle"></div>
+  </section>
+
+  <!-- ===================== LOOKUP WORD ===================== -->
+  <section class="panel" id="lookup-word" data-panel>
+    <div class="panel-head">
+      <h2>Lookup word</h2>
+      <p class="hint">Enter a word key to see it broken into its particles, color-coded by type.</p>
+    </div>
+    <form class="lookup-form" data-lookup="word">
+      <input type="text" list="wordKeysList" name="key" placeholder="word key" autocomplete="off" required>
+      <button class="btn btn-accent" type="submit">Look up</button>
+    </form>
+    <div class="result" id="result-lookup-word"></div>
+  </section>
+
+  <!-- ===================== LOOKUP PHRASE ===================== -->
+  <section class="panel" id="lookup-phrase" data-panel>
+    <div class="panel-head">
+      <h2>Lookup phrase</h2>
+      <p class="hint">Enter a phrase key to see it broken into words, and each word into particles.</p>
+    </div>
+    <form class="lookup-form" data-lookup="phrase">
+      <input type="text" list="phraseKeysList" name="key" placeholder="phrase key" autocomplete="off" required>
+      <button class="btn btn-accent" type="submit">Look up</button>
+    </form>
+    <div class="result" id="result-lookup-phrase"></div>
+  </section>
+
+  <!-- ===================== ADD PARTICLE ===================== -->
+  <section class="panel" id="add-particle" data-panel>
+    <div class="panel-head">
+      <h2>Add particle</h2>
+      <p class="hint">A root, prefix, or suffix — the smallest piece a word is built from.</p>
+    </div>
+    <form class="entry-form" id="form-add-particle" data-store="particles">
+      <div class="field-grid">
+        <label class="field">
+          <span>Key</span>
+          <input type="text" name="key" class="mono" placeholder="short id, e.g. ak" required>
+        </label>
+        <label class="field">
+          <span>Text</span>
+          <input type="text" name="text" class="mono" placeholder="as written, e.g. ak" required>
+        </label>
+        <label class="field">
+          <span>Type</span>
+          <select name="ptype" required></select>
+        </label>
+        <label class="field field-custom-type" hidden>
+          <span>Custom type</span>
+          <input type="text" name="ptypeCustom" placeholder="e.g. numeral">
+        </label>
+      </div>
+      <label class="field">
+        <span>Meaning</span>
+        <input type="text" name="meaning" placeholder="primary gloss, e.g. I" required>
+      </label>
+      <label class="field">
+        <span>Additional meanings <em>(one per line, optional)</em></span>
+        <textarea name="meanings" rows="2"></textarea>
+      </label>
+      <label class="field">
+        <span>Notes <em>(optional)</em></span>
+        <textarea name="notes" rows="2"></textarea>
+      </label>
+      <div class="existing-warning" hidden></div>
+      <div class="form-actions">
+        <button class="btn btn-accent" type="submit">Save particle</button>
+        <span class="save-status" data-save-status></span>
+      </div>
+    </form>
+  </section>
+
+  <!-- ===================== ADD WORD ===================== -->
+  <section class="panel" id="add-word" data-panel>
+    <div class="panel-head">
+      <h2>Add word</h2>
+      <p class="hint">A full word, built from one or more particles in order.</p>
+    </div>
+    <form class="entry-form" id="form-add-word" data-store="words">
+      <div class="field-grid">
+        <label class="field">
+          <span>Key</span>
+          <input type="text" name="key" class="mono" placeholder="short id, e.g. aknig{on-}ha{en}da{?}s" required>
+        </label>
+        <label class="field">
+          <span>Word</span>
+          <input type="text" name="word" class="mono" placeholder="as written" required>
+        </label>
+        <label class="field">
+          <span>Type</span>
+          <select name="wtype" required></select>
+        </label>
+        <label class="field field-custom-type" hidden>
+          <span>Custom type</span>
+          <input type="text" name="wtypeCustom" placeholder="e.g. numeral">
+        </label>
+      </div>
+      <label class="field">
+        <span>Meaning</span>
+        <input type="text" name="meaning" placeholder="primary gloss, e.g. I understand" required>
+      </label>
+      <label class="field">
+        <span>Particles <em>(existing particle keys, separated by +, in order)</em></span>
+        <input type="text" name="particles" class="mono" placeholder="ak + nig{on}ha{en}da{?}s" list="particleKeysList" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Additional meanings <em>(one per line, optional)</em></span>
+        <textarea name="meanings" rows="2"></textarea>
+      </label>
+      <label class="field">
+        <span>Notes <em>(optional)</em></span>
+        <textarea name="notes" rows="2"></textarea>
+      </label>
+      <div class="existing-warning" hidden></div>
+      <div class="form-actions">
+        <button class="btn btn-accent" type="submit">Save word</button>
+        <span class="save-status" data-save-status></span>
+      </div>
+    </form>
+  </section>
+
+  <!-- ===================== ADD PHRASE ===================== -->
+  <section class="panel" id="add-phrase" data-panel>
+    <div class="panel-head">
+      <h2>Add phrase</h2>
+      <p class="hint">A sequence of words. Leave "Words" blank to split the phrase on spaces automatically.</p>
+    </div>
+    <form class="entry-form" id="form-add-phrase" data-store="phrases">
+      <div class="field-grid">
+        <label class="field field-wide">
+          <span>Key</span>
+          <input type="text" name="key" class="mono" placeholder="short id, e.g. how do I say" required>
+        </label>
+      </div>
+      <label class="field">
+        <span>Phrase</span>
+        <input type="text" name="phrase" class="mono" placeholder="as written" required>
+      </label>
+      <label class="field">
+        <span>Meaning</span>
+        <input type="text" name="meaning" placeholder="primary gloss, e.g. How do I say ...?" required>
+      </label>
+      <label class="field">
+        <span>Words <em>(existing word keys, separated by +, in order — optional)</em></span>
+        <input type="text" name="words" class="mono" placeholder="leave blank to auto-split the phrase on spaces" list="wordKeysList" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Additional meanings <em>(one per line, optional)</em></span>
+        <textarea name="meanings" rows="2"></textarea>
+      </label>
+      <label class="field">
+        <span>Notes <em>(optional)</em></span>
+        <textarea name="notes" rows="2"></textarea>
+      </label>
+      <div class="existing-warning" hidden></div>
+      <div class="form-actions">
+        <button class="btn btn-accent" type="submit">Save phrase</button>
+        <span class="save-status" data-save-status></span>
+      </div>
+    </form>
+  </section>
+
+</main>
+
+<datalist id="particleKeysList"></datalist>
+<datalist id="wordKeysList"></datalist>
+<datalist id="phraseKeysList"></datalist>
+
+<!-- ===================== PUBLISH PANEL ===================== -->
+<div class="overlay" id="publishOverlay" hidden>
+  <div class="publish-panel">
+    <div class="publish-head">
+      <h2>Publish to GitHub</h2>
+      <button class="btn btn-ghost" id="closePublish" type="button" aria-label="Close">✕</button>
+    </div>
+    <p class="hint">
+      Pushes <code>particles.json</code>, <code>words.json</code>, and <code>phrases.json</code>
+      to a branch on <strong>zj224/gayogohono</strong>. If the branch doesn't exist yet, it's created from <code>main</code>.
+    </p>
+
+    <label class="field">
+      <span>Branch name</span>
+      <input type="text" id="branchName" class="mono" placeholder="e.g. kelly-edits" autocomplete="off">
+    </label>
+
+    <label class="field">
+      <span>GitHub personal access token</span>
+      <input type="password" id="githubToken" class="mono" placeholder="ghp_…" autocomplete="off">
+      <em class="field-note">
+        Needs "repo" (or "Contents: Read and write") permission. Kept in memory for this
+        browser tab only — never saved to cookies, never sent anywhere but api.github.com.
+      </em>
+    </label>
+
+    <div class="form-actions">
+      <button class="btn btn-accent" id="pushButton" type="button">Push dictionary</button>
+    </div>
+
+    <div class="publish-log" id="publishLog"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
