@@ -110,5 +110,23 @@
     ],
     "type": "adverb",
     "word": "{en}h{en}:{?}"
+  },
+  "d{en}{?}ho{?}d{en}{?}": {
+    "word": "d{en}{?}ho{?}d{en}{?}",
+    "meaning": "what",
+    "type": "pronoun",
+    "particles": [
+      "d{en}{?}ho{?}d{en}{?}"
+    ],
+    "notes": ""
+  },
+  "ne{?}": {
+    "word": "ne{?}",
+    "meaning": "for",
+    "type": "particle",
+    "particles": [
+      "ne{?}"
+    ],
+    "notes": ""
   }
 }
