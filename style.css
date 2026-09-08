@@ -246,6 +246,9 @@ input:focus, select:focus, textarea:focus {
   padding: 4rem 1.5rem;
   z-index: 10;
 }
+.overlay[hidden] {
+  display: none;
+}
 
 .publish-panel {
   background: var(--panel);
