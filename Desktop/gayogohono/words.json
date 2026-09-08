@@ -1,0 +1,35 @@
+{
+  "gaeya{?}dag{en!}:nha{?}": {
+    "meaning": "parent",
+    "notes": {},
+    "particles": [],
+    "type": "noun",
+    "word": "gaeya{?}dag{en!}:nha{?}"
+  },
+  "ga{on}hy{a!}geh": {
+    "meaning": "Sky People",
+    "notes": {},
+    "particles": [
+      "ga{on}hy{a!}",
+      "geh"
+    ],
+    "type": "noun",
+    "word": "ga{on}hy{a!}geh"
+  },
+  "ne:{?}hni{?}": {
+    "meaning": "and",
+    "notes": {},
+    "particles": [
+      "ne:{?}hni{?}"
+    ],
+    "type": "conjunction",
+    "word": "ne:{?}hni{?}"
+  },
+  "nigaw{en}n{o!}{?}d{en}:": {
+    "meaning": "the language",
+    "notes": "",
+    "particles": "",
+    "type": "noun",
+    "word": "nigaw{en}n{o!}{?}d{en}:"
+  }
+}
