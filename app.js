@@ -4,10 +4,12 @@
    Gayogo̱hó:nǫˀ Lexicon — front end
    Ports the coloring/shorthand logic from shorthands.py + dictionary.py to
    the browser, stores the working dictionary in cookies, and can push it to
-   a branch on GitHub as one JSON file per group — Particles/particles_
-   pronoun.json, Particles/particles_other.json (for ungrouped entries), and
-   the same under Words/ and Phrases/ — so each grammatical family lives in
-   its own file instead of one big particles.json / words.json / phrases.json.
+   a branch on GitHub as one JSON file per group, nested under a Category
+   folder — Particles/Pronouns/emphatic_pronouns_particles.json — with
+   ungrouped entries going to Particles/Other/other_particles.json (as well
+   as any group that hasn't been assigned a category yet). Same layout under
+   Words/ and Phrases/, so each grammatical family lives in its own file
+   instead of one big particles.json / words.json / phrases.json.
    ========================================================================= */
 
 const GITHUB_OWNER = "zj224";
@@ -17,6 +19,7 @@ const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REP
 const API_BASE = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
 const GROUP_FOLDER = { particles: "Particles", words: "Words", phrases: "Phrases" };
+const OTHER_FOLDER = "Other";
 
 /* "possessive pronouns" -> "possessive_pronouns"; no group -> "other". */
 function slugifyGroup(name) {
@@ -28,21 +31,41 @@ function slugifyGroup(name) {
   return slug || "other";
 }
 
-function groupFileName(storeName, group) {
-  return `${storeName}_${slugifyGroup(group)}.json`;
+/* A category is a folder name the user typed, e.g. "Pronouns" — kept as
+   entered (so casing is the user's choice), just made filesystem-safe. */
+function sanitizeCategory(name) {
+  const cleaned = (name || "").trim().replace(/[\\/:*?"<>|]+/g, "_");
+  return cleaned || OTHER_FOLDER;
 }
 
-/* Splits a store's entries into per-group shards, e.g. { "particles_pronoun.json":
-   {...}, "particles_other.json": {...} }. An entry belonging to more than one
-   group is duplicated into each of those groups' shards. */
+function groupFileName(storeName, group) {
+  return `${slugifyGroup(group)}_${storeName}.json`;
+}
+
+/* Where one entry's shard file lives for a given group it belongs to:
+     no group             -> Particles/Other/other_particles.json
+     group, no category   -> Particles/Other/<group>_particles.json
+     group + category     -> Particles/<Category>/<group>_particles.json */
+function shardPath(storeName, category, group) {
+  const folder = GROUP_FOLDER[storeName];
+  if (!group) return `${folder}/${OTHER_FOLDER}/${groupFileName(storeName, null)}`;
+  const sub = category && category.trim() ? sanitizeCategory(category) : OTHER_FOLDER;
+  return `${folder}/${sub}/${groupFileName(storeName, group)}`;
+}
+
+/* Splits a store's entries into per-group shards, keyed by full repo path,
+   e.g. "Particles/Pronouns/emphatic_pronouns_particles.json". An entry
+   belonging to more than one group is duplicated into each of those groups'
+   shards (all under the same single Category, since that's one field per
+   entry — an entry that spans categories would need to be re-split by hand). */
 function buildShards(storeName) {
   const shards = new Map();
   Object.entries(state[storeName]).forEach(([key, entry]) => {
     const groups = entry.groups && entry.groups.length ? entry.groups : [null];
     groups.forEach((g) => {
-      const filename = groupFileName(storeName, g);
-      if (!shards.has(filename)) shards.set(filename, {});
-      shards.get(filename)[key] = entry;
+      const path = shardPath(storeName, entry.category, g);
+      if (!shards.has(path)) shards.set(path, {});
+      shards.get(path)[key] = entry;
     });
   });
   return shards;
@@ -250,6 +273,12 @@ function appendSpellingsAndGroups(container, entry) {
     });
     container.appendChild(line);
   }
+  if (entry.category) {
+    const line = el("div", { class: "result-line" });
+    line.append("category: ");
+    line.appendChild(el("span", { class: "group-chip", text: entry.category }));
+    container.appendChild(line);
+  }
 }
 
 function appendNotesAndExamples(container, entry) {
@@ -445,20 +474,26 @@ function loadStoreFromCookies(storeName) {
 /* --------------------------------------------------------------------- */
 
 /* The repo tree is fetched once (one API call) so all three stores' group
-   files can be located; each shard is then pulled from the raw/cached CDN,
-   not the rate-limited API, and merged back into one flat store object. */
-async function fetchGithubTree() {
-  const res = await fetch(`${API_BASE}/git/trees/${GITHUB_BRANCH_DEFAULT}?recursive=1`, { cache: "no-store" });
+   files — at any folder depth, e.g. Particles/Pronouns/foo.json — can be
+   located; each shard is then pulled from the raw/cached CDN, not the
+   rate-limited API, and merged back into one flat store object. Also reused
+   by the publish flow (against the target branch) to find each store's
+   existing files, so stale ones (an emptied/renamed/recategorized group)
+   can be cleaned up. */
+async function fetchGithubTree(branch) {
+  const res = await fetch(`${API_BASE}/git/trees/${encodeURIComponent(branch)}?recursive=1`, { cache: "no-store" });
   if (!res.ok) throw new Error(`GitHub tree fetch failed: ${res.status}`);
   const data = await res.json();
   return data.tree || [];
 }
 
-async function fetchStoreFromGithub(storeName, tree) {
+function pathsForStore(storeName, tree) {
   const prefix = `${GROUP_FOLDER[storeName]}/`;
-  const paths = tree
-    .filter((entry) => entry.type === "blob" && entry.path.startsWith(prefix) && entry.path.endsWith(".json"))
-    .map((entry) => entry.path);
+  return tree.filter((entry) => entry.type === "blob" && entry.path.startsWith(prefix) && entry.path.endsWith(".json"));
+}
+
+async function fetchStoreFromGithub(storeName, tree) {
+  const paths = pathsForStore(storeName, tree).map((entry) => entry.path);
 
   const merged = {};
   await Promise.all(
@@ -490,7 +525,7 @@ async function initApp() {
     setSyncStatus("ok", "loaded from this browser");
   } else {
     try {
-      const tree = await fetchGithubTree();
+      const tree = await fetchGithubTree(GITHUB_BRANCH_DEFAULT);
       await Promise.all(
         missing.map(async (storeName) => {
           state[storeName] = await fetchStoreFromGithub(storeName, tree);
@@ -530,6 +565,14 @@ function allGroupsIn(storeName) {
   return groups;
 }
 
+function allCategoriesIn(storeName) {
+  const categories = new Set();
+  Object.values(state[storeName]).forEach((entry) => {
+    if (entry.category) categories.add(entry.category);
+  });
+  return categories;
+}
+
 function refreshDatalists() {
   fillDatalist("particleKeysList", Object.keys(state.particles));
   fillDatalist("wordKeysList", Object.keys(state.words));
@@ -537,6 +580,9 @@ function refreshDatalists() {
   fillDatalist("particleGroupsList", allGroupsIn("particles"));
   fillDatalist("wordGroupsList", allGroupsIn("words"));
   fillDatalist("phraseGroupsList", allGroupsIn("phrases"));
+  fillDatalist("particleCategoriesList", allCategoriesIn("particles"));
+  fillDatalist("wordCategoriesList", allCategoriesIn("words"));
+  fillDatalist("phraseCategoriesList", allCategoriesIn("phrases"));
 }
 
 /* --------------------------------------------------------------------- */
@@ -711,6 +757,7 @@ function fillParticleForm(key) {
   form.querySelector('[name="meanings"]').value = (p.meanings || []).join("\n");
   form.querySelector('[name="spellings"]').value = (p.spellings || []).join("\n");
   form.querySelector('[name="groups"]').value = (p.groups || []).join(" + ");
+  form.querySelector('[name="category"]').value = p.category || "";
   form.querySelector('[name="notes"]').value = notesAsString(p.notes);
   form.querySelector('[name="key"]').dispatchEvent(new Event("blur"));
 }
@@ -732,6 +779,7 @@ function fillWordForm(key) {
   form.querySelector('[name="meanings"]').value = (w.meanings || []).join("\n");
   form.querySelector('[name="spellings"]').value = (w.spellings || []).join("\n");
   form.querySelector('[name="groups"]').value = (w.groups || []).join(" + ");
+  form.querySelector('[name="category"]').value = w.category || "";
   form.querySelector('[name="notes"]').value = notesAsString(w.notes);
   form.querySelector('[name="key"]').dispatchEvent(new Event("blur"));
 }
@@ -747,6 +795,7 @@ function fillPhraseForm(key) {
   form.querySelector('[name="meanings"]').value = (ph.meanings || []).join("\n");
   form.querySelector('[name="spellings"]').value = (ph.spellings || []).join("\n");
   form.querySelector('[name="groups"]').value = (ph.groups || []).join(" + ");
+  form.querySelector('[name="category"]').value = ph.category || "";
   form.querySelector('[name="notes"]').value = notesAsString(ph.notes);
   form.querySelector('[name="key"]').dispatchEvent(new Event("blur"));
 }
@@ -901,12 +950,14 @@ function wireAddParticleForm() {
     const meaningsExtra = splitLines(fd.get("meanings"));
     const spellingsExtra = splitLines(fd.get("spellings"));
     const groups = parsePlusList(fd.get("groups"));
+    const category = fd.get("category").trim();
     const notes = fd.get("notes").trim();
 
     const newFields = { text, meaning, type: ptype, notes };
     if (meaningsExtra.length) newFields.meanings = meaningsExtra;
     if (spellingsExtra.length) newFields.spellings = spellingsExtra;
     if (groups.length) newFields.groups = groups;
+    if (category) newFields.category = category;
 
     const { created } = mergeOrCreate(state.particles, key, newFields);
     saveStoreToCookies("particles");
@@ -931,12 +982,14 @@ function wireAddWordForm() {
     const meaningsExtra = splitLines(fd.get("meanings"));
     const spellingsExtra = splitLines(fd.get("spellings"));
     const groups = parsePlusList(fd.get("groups"));
+    const category = fd.get("category").trim();
     const notes = fd.get("notes").trim();
 
     const newFields = { word, meaning, type: wtype, particles: particleKeys, notes };
     if (meaningsExtra.length) newFields.meanings = meaningsExtra;
     if (spellingsExtra.length) newFields.spellings = spellingsExtra;
     if (groups.length) newFields.groups = groups;
+    if (category) newFields.category = category;
 
     const { created } = mergeOrCreate(state.words, key, newFields);
     saveStoreToCookies("words");
@@ -961,12 +1014,14 @@ function wireAddPhraseForm() {
     const meaningsExtra = splitLines(fd.get("meanings"));
     const spellingsExtra = splitLines(fd.get("spellings"));
     const groups = parsePlusList(fd.get("groups"));
+    const category = fd.get("category").trim();
     const notes = fd.get("notes").trim();
 
     const newFields = { phrase, meaning, words: wordKeys, notes };
     if (meaningsExtra.length) newFields.meanings = meaningsExtra;
     if (spellingsExtra.length) newFields.spellings = spellingsExtra;
     if (groups.length) newFields.groups = groups;
+    if (category) newFields.category = category;
 
     const { created } = mergeOrCreate(state.phrases, key, newFields);
     saveStoreToCookies("phrases");
@@ -1039,22 +1094,18 @@ async function pushDictionary() {
       throw new Error(`Could not create branch (${createRes.status}): ${errBody.message || "unknown error"}`);
     }
 
-    for (const [storeName, folder] of Object.entries(GROUP_FOLDER)) {
+    logPublish(`Reading current files on "${branch}"…`);
+    const branchTree = await fetchGithubTree(branch);
+
+    for (const storeName of Object.keys(GROUP_FOLDER)) {
       const shards = buildShards(storeName);
 
-      logPublish(`Listing ${folder}/ on "${branch}"…`);
-      const existingShas = new Map();
-      const listRes = await githubRequest(`/contents/${folder}?ref=${encodeURIComponent(branch)}`, token);
-      if (listRes.ok) {
-        (await listRes.json()).forEach((item) => {
-          if (item.type === "file") existingShas.set(item.name, item.sha);
-        });
-      } else if (listRes.status !== 404) {
-        throw new Error(`Could not list ${folder}/ on branch (${listRes.status}).`);
-      }
+      // Category folders mean a store's files can sit at any depth (e.g.
+      // Particles/Pronouns/foo.json), so stale-file detection needs the
+      // whole subtree, not a single directory listing.
+      const existingShas = new Map(pathsForStore(storeName, branchTree).map((entry) => [entry.path, entry.sha]));
 
-      for (const [filename, data] of shards.entries()) {
-        const path = `${folder}/${filename}`;
+      for (const [path, data] of shards.entries()) {
         logPublish(`Pushing ${path}…`);
         const putRes = await githubRequest(`/contents/${path}`, token, {
           method: "PUT",
@@ -1063,7 +1114,7 @@ async function pushDictionary() {
             message: `Update ${path} via Gayogo̱hó:nǫˀ web app`,
             content: utf8ToBase64(JSON.stringify(data, null, 2)),
             branch,
-            ...(existingShas.has(filename) ? { sha: existingShas.get(filename) } : {}),
+            ...(existingShas.has(path) ? { sha: existingShas.get(path) } : {}),
           }),
         });
         if (!putRes.ok) {
@@ -1071,13 +1122,13 @@ async function pushDictionary() {
           throw new Error(`Failed to push ${path} (${putRes.status}): ${errBody.message || "unknown error"}`);
         }
         logPublish(`✓ ${path} pushed.`, "ok");
-        existingShas.delete(filename);
+        existingShas.delete(path);
       }
 
       // Anything left in existingShas is a group file from a previous publish
-      // that no longer has any entries (its group was renamed or emptied).
-      for (const [filename, sha] of existingShas.entries()) {
-        const path = `${folder}/${filename}`;
+      // that no longer has any entries (its group was renamed, recategorized,
+      // or emptied).
+      for (const [path, sha] of existingShas.entries()) {
         logPublish(`Removing stale ${path}…`);
         const delRes = await githubRequest(`/contents/${path}`, token, {
           method: "DELETE",

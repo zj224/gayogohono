@@ -201,6 +201,10 @@
         <input type="text" name="groups" placeholder="e.g. possessive pronouns + pronoun" list="particleGroupsList" autocomplete="off">
       </label>
       <label class="field">
+        <span>Category <em>(optional — the folder these Groups are filed under, e.g. "Pronouns"; pick an existing one or type a new name to create it)</em></span>
+        <input type="text" name="category" placeholder="e.g. Pronouns" list="particleCategoriesList" autocomplete="off">
+      </label>
+      <label class="field">
         <span>Notes <em>(optional)</em></span>
         <textarea name="notes" rows="2"></textarea>
       </label>
@@ -258,6 +262,10 @@
         <input type="text" name="groups" placeholder="e.g. possessive pronouns + pronoun" list="wordGroupsList" autocomplete="off">
       </label>
       <label class="field">
+        <span>Category <em>(optional — the folder these Groups are filed under, e.g. "Pronouns"; pick an existing one or type a new name to create it)</em></span>
+        <input type="text" name="category" placeholder="e.g. Pronouns" list="wordCategoriesList" autocomplete="off">
+      </label>
+      <label class="field">
         <span>Notes <em>(optional)</em></span>
         <textarea name="notes" rows="2"></textarea>
       </label>
@@ -307,6 +315,10 @@
         <input type="text" name="groups" placeholder="e.g. greetings" list="phraseGroupsList" autocomplete="off">
       </label>
       <label class="field">
+        <span>Category <em>(optional — the folder these Groups are filed under, e.g. "Greetings"; pick an existing one or type a new name to create it)</em></span>
+        <input type="text" name="category" placeholder="e.g. Greetings" list="phraseCategoriesList" autocomplete="off">
+      </label>
+      <label class="field">
         <span>Notes <em>(optional)</em></span>
         <textarea name="notes" rows="2"></textarea>
       </label>
@@ -326,6 +338,9 @@
 <datalist id="particleGroupsList"></datalist>
 <datalist id="wordGroupsList"></datalist>
 <datalist id="phraseGroupsList"></datalist>
+<datalist id="particleCategoriesList"></datalist>
+<datalist id="wordCategoriesList"></datalist>
+<datalist id="phraseCategoriesList"></datalist>
 
 <!-- ===================== PUBLISH PANEL ===================== -->
 <div class="overlay" id="publishOverlay" hidden>
@@ -335,9 +350,11 @@
       <button class="btn btn-ghost" id="closePublish" type="button" aria-label="Close">✕</button>
     </div>
     <p class="hint">
-      Pushes one JSON file per group under <code>Particles/</code>, <code>Words/</code>, and
-      <code>Phrases/</code> (ungrouped entries go to e.g. <code>particles_other.json</code>) to a branch
-      on <strong>zj224/gayogohono</strong>. If the branch doesn't exist yet, it's created from <code>main</code>.
+      Pushes one JSON file per group, filed under its Category folder — e.g.
+      <code>Particles/Pronouns/emphatic_pronouns_particles.json</code> — under
+      <code>Particles/</code>, <code>Words/</code>, and <code>Phrases/</code>. Entries with no group, or a group with no
+      Category yet, go to e.g. <code>Particles/Other/other_particles.json</code>. Pushes to a branch on
+      <strong>zj224/gayogohono</strong>; if the branch doesn't exist yet, it's created from <code>main</code>.
     </p>
 
     <label class="field">
