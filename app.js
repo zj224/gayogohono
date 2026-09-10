@@ -29,6 +29,9 @@ const TYPE_VAR = {
 
 const state = { particles: {}, words: {}, phrases: {} };
 
+const STORE_SINGULAR = { particles: "particle", words: "word", phrases: "phrase" };
+const currentDetailKey = { particle: null, word: null, phrase: null };
+
 /* --------------------------------------------------------------------- */
 /* Shorthand / coloring, ported from shorthands.py and dictionary.py     */
 /* --------------------------------------------------------------------- */
@@ -210,8 +213,8 @@ function appendNotesAndExamples(container, entry) {
   }
 }
 
-function renderLookupParticle(key) {
-  const container = document.getElementById("result-lookup-particle");
+function renderLookupParticle(key, containerId = "result-lookup-particle") {
+  const container = document.getElementById(containerId);
   const p = state.particles[key];
   if (!p) return renderNotFound(container, "particle", key);
 
@@ -236,8 +239,8 @@ function renderLookupParticle(key) {
   appendNotesAndExamples(container, p);
 }
 
-function renderLookupWord(key) {
-  const container = document.getElementById("result-lookup-word");
+function renderLookupWord(key, containerId = "result-lookup-word") {
+  const container = document.getElementById(containerId);
   const w = state.words[key];
   if (!w) return renderNotFound(container, "word", key);
 
@@ -266,8 +269,8 @@ function renderLookupWord(key) {
   appendNotesAndExamples(container, w);
 }
 
-function renderLookupPhrase(key) {
-  const container = document.getElementById("result-lookup-phrase");
+function renderLookupPhrase(key, containerId = "result-lookup-phrase") {
+  const container = document.getElementById(containerId);
   const ph = state.phrases[key];
   if (!ph) return renderNotFound(container, "phrase", key);
 
@@ -426,6 +429,7 @@ async function initApp() {
   }
 
   refreshDatalists();
+  renderAllBrowseLists();
 }
 
 /* --------------------------------------------------------------------- */
@@ -449,17 +453,180 @@ function refreshDatalists() {
 }
 
 /* --------------------------------------------------------------------- */
-/* Tabs                                                                   */
+/* Tabs / panel switching                                                */
 /* --------------------------------------------------------------------- */
+
+function activatePanel(panelId) {
+  document.querySelectorAll("[data-panel]").forEach((p) => p.classList.toggle("active", p.id === panelId));
+  document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === panelId));
+  if (panelId.startsWith("browse-")) renderBrowseList(panelId.slice("browse-".length) + "s");
+}
 
 function wireTabs() {
   document.querySelectorAll(".tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll("[data-panel]").forEach((p) => p.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(btn.dataset.tab).classList.add("active");
+    btn.addEventListener("click", () => activatePanel(btn.dataset.tab));
+  });
+  document.querySelectorAll(".back-link").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      activatePanel(link.dataset.backTab);
     });
+  });
+}
+
+/* --------------------------------------------------------------------- */
+/* Browse lists — every particle/word/phrase, colored, with a tooltip and */
+/* a link through to its detail page.                                    */
+/* --------------------------------------------------------------------- */
+
+function renderBrowseList(storeName) {
+  const singular = STORE_SINGULAR[storeName];
+  const container = document.getElementById(`browse-list-${storeName}`);
+  container.innerHTML = "";
+
+  const keys = Object.keys(state[storeName]).sort();
+  if (!keys.length) {
+    container.appendChild(el("p", { class: "result-empty", text: `No ${singular}s yet.` }));
+    return;
+  }
+
+  keys.forEach((key) => {
+    const entry = state[storeName][key];
+    const row = el("div", { class: "browse-row" });
+
+    const link = document.createElement("a");
+    link.href = "#";
+    link.className = "browse-key";
+    link.dataset.store = storeName;
+    link.dataset.key = key;
+    link.dataset.tooltip =
+      storeName === "particles" ? `${entry.type}: ${glossPlainText(entry.meaning)}` : glossPlainText(entry.meaning);
+
+    if (storeName === "particles") {
+      link.appendChild(coloredSpan(translateToGayogohono(entry.text), entry.type));
+    } else if (storeName === "words") {
+      link.appendChild(coloredWordText(key));
+    } else {
+      const wordKeys = entry.words || [];
+      if (wordKeys.length) appendJoined(link, wordKeys.map((wk) => coloredWordText(wk)), " ");
+      else link.textContent = translateToGayogohono(entry.phrase);
+    }
+    row.appendChild(link);
+
+    const meaning = el("div", { class: "browse-meaning" });
+    meaning.appendChild(glossFragment(entry.meaning));
+    row.appendChild(meaning);
+
+    container.appendChild(row);
+  });
+}
+
+function renderAllBrowseLists() {
+  Object.keys(STORE_SINGULAR).forEach(renderBrowseList);
+}
+
+function navigateToDetail(storeName, key) {
+  const singular = STORE_SINGULAR[storeName];
+  currentDetailKey[singular] = key;
+  const bodyId = `detail-${singular}-body`;
+  if (storeName === "particles") renderLookupParticle(key, bodyId);
+  if (storeName === "words") renderLookupWord(key, bodyId);
+  if (storeName === "phrases") renderLookupPhrase(key, bodyId);
+  document.getElementById(`detail-${singular}-title`).textContent = keyDisplay(key);
+  activatePanel(`detail-${singular}`);
+}
+
+function wireBrowseLinks() {
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest(".browse-key");
+    if (!link) return;
+    e.preventDefault();
+    navigateToDetail(link.dataset.store, link.dataset.key);
+  });
+}
+
+/* --------------------------------------------------------------------- */
+/* Edit — prefills the matching Add form from a detail page and jumps    */
+/* there, reusing its existing create-or-update save logic.              */
+/* --------------------------------------------------------------------- */
+
+function setTypeSelect(selectEl, customField, customInput, typeValue) {
+  const known = GRAMMAR_TYPES.includes(typeValue);
+  selectEl.value = known ? typeValue : "__other__";
+  customField.hidden = known;
+  customInput.required = !known;
+  customInput.value = known ? "" : typeValue || "";
+}
+
+function notesAsString(notes) {
+  return typeof notes === "string" ? notes : "";
+}
+
+function fillParticleForm(key) {
+  const p = state.particles[key];
+  if (!p) return;
+  const form = document.getElementById("form-add-particle");
+  form.querySelector('[name="key"]').value = key;
+  form.querySelector('[name="text"]').value = p.text || "";
+  setTypeSelect(
+    form.querySelector('select[name="ptype"]'),
+    form.querySelector(".field-custom-type"),
+    form.querySelector('input[name="ptypeCustom"]'),
+    p.type
+  );
+  form.querySelector('[name="meaning"]').value = p.meaning || "";
+  form.querySelector('[name="meanings"]').value = (p.meanings || []).join("\n");
+  form.querySelector('[name="notes"]').value = notesAsString(p.notes);
+  form.querySelector('[name="key"]').dispatchEvent(new Event("blur"));
+}
+
+function fillWordForm(key) {
+  const w = state.words[key];
+  if (!w) return;
+  const form = document.getElementById("form-add-word");
+  form.querySelector('[name="key"]').value = key;
+  form.querySelector('[name="word"]').value = w.word || "";
+  setTypeSelect(
+    form.querySelector('select[name="wtype"]'),
+    form.querySelector(".field-custom-type"),
+    form.querySelector('input[name="wtypeCustom"]'),
+    w.type
+  );
+  form.querySelector('[name="meaning"]').value = w.meaning || "";
+  form.querySelector('[name="particles"]').value = (w.particles || []).join(" + ");
+  form.querySelector('[name="meanings"]').value = (w.meanings || []).join("\n");
+  form.querySelector('[name="notes"]').value = notesAsString(w.notes);
+  form.querySelector('[name="key"]').dispatchEvent(new Event("blur"));
+}
+
+function fillPhraseForm(key) {
+  const ph = state.phrases[key];
+  if (!ph) return;
+  const form = document.getElementById("form-add-phrase");
+  form.querySelector('[name="key"]').value = key;
+  form.querySelector('[name="phrase"]').value = ph.phrase || "";
+  form.querySelector('[name="meaning"]').value = ph.meaning || "";
+  form.querySelector('[name="words"]').value = (ph.words || []).join(" + ");
+  form.querySelector('[name="meanings"]').value = (ph.meanings || []).join("\n");
+  form.querySelector('[name="notes"]').value = notesAsString(ph.notes);
+  form.querySelector('[name="key"]').dispatchEvent(new Event("blur"));
+}
+
+function wireEditButtons() {
+  document.getElementById("edit-particle-btn").addEventListener("click", () => {
+    if (!currentDetailKey.particle) return;
+    fillParticleForm(currentDetailKey.particle);
+    activatePanel("add-particle");
+  });
+  document.getElementById("edit-word-btn").addEventListener("click", () => {
+    if (!currentDetailKey.word) return;
+    fillWordForm(currentDetailKey.word);
+    activatePanel("add-word");
+  });
+  document.getElementById("edit-phrase-btn").addEventListener("click", () => {
+    if (!currentDetailKey.phrase) return;
+    fillPhraseForm(currentDetailKey.phrase);
+    activatePanel("add-phrase");
   });
 }
 
@@ -601,6 +768,7 @@ function wireAddParticleForm() {
     const { created } = mergeOrCreate(state.particles, key, newFields);
     saveStoreToCookies("particles");
     refreshDatalists();
+    renderAllBrowseLists();
     showSaveStatus(form, created ? `Saved new particle ${keyDisplay(key)}.` : `Updated particle ${keyDisplay(key)}.`);
     form.querySelector(".existing-warning").hidden = true;
   });
@@ -626,6 +794,7 @@ function wireAddWordForm() {
     const { created } = mergeOrCreate(state.words, key, newFields);
     saveStoreToCookies("words");
     refreshDatalists();
+    renderAllBrowseLists();
     showSaveStatus(form, created ? `Saved new word ${keyDisplay(key)}.` : `Updated word ${keyDisplay(key)}.`);
     form.querySelector(".existing-warning").hidden = true;
   });
@@ -651,6 +820,7 @@ function wireAddPhraseForm() {
     const { created } = mergeOrCreate(state.phrases, key, newFields);
     saveStoreToCookies("phrases");
     refreshDatalists();
+    renderAllBrowseLists();
     showSaveStatus(form, created ? `Saved new phrase ${keyDisplay(key)}.` : `Updated phrase ${keyDisplay(key)}.`);
     form.querySelector(".existing-warning").hidden = true;
   });
@@ -827,6 +997,8 @@ document.addEventListener("DOMContentLoaded", () => {
   wireAddParticleForm();
   wireAddWordForm();
   wireAddPhraseForm();
+  wireBrowseLinks();
+  wireEditButtons();
   wirePublishPanel();
   initTooltips();
   initApp();

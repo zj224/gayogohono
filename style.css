@@ -184,6 +184,60 @@ main { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
   vertical-align: middle;
 }
 
+/* ----------------------------------------------------------------- browse */
+
+.browse-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.browse-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 1.25rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  border-bottom: 1px solid var(--hairline);
+}
+.browse-row:hover { background: var(--panel-raised); }
+.browse-row:last-child { border-bottom: none; }
+
+.browse-key {
+  flex: 0 0 auto;
+  min-width: 160px;
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.browse-key:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+.browse-meaning {
+  flex: 1 1 240px;
+  font-family: var(--serif);
+  color: var(--ink-muted);
+  font-size: 0.96rem;
+}
+
+/* ------------------------------------------------------------------ detail */
+
+.back-link {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+}
+.back-link:hover { color: var(--ink); text-decoration: underline; }
+
+#detail-particle .form-actions,
+#detail-word .form-actions,
+#detail-phrase .form-actions {
+  margin-top: 1rem;
+}
+
 /* ----------------------------------------------------------------- forms */
 
 .entry-form { display: flex; flex-direction: column; gap: 1rem; }

@@ -33,6 +33,10 @@
   <button class="tab" data-tab="lookup-word" type="button">Lookup Word</button>
   <button class="tab" data-tab="lookup-phrase" type="button">Lookup Phrase</button>
   <span class="tab-divider" aria-hidden="true"></span>
+  <button class="tab" data-tab="browse-particle" type="button">All Particles</button>
+  <button class="tab" data-tab="browse-word" type="button">All Words</button>
+  <button class="tab" data-tab="browse-phrase" type="button">All Phrases</button>
+  <span class="tab-divider" aria-hidden="true"></span>
   <button class="tab" data-tab="add-particle" type="button">Add Particle</button>
   <button class="tab" data-tab="add-word" type="button">Add Word</button>
   <button class="tab" data-tab="add-phrase" type="button">Add Phrase</button>
@@ -77,6 +81,69 @@
       <button class="btn btn-accent" type="submit">Look up</button>
     </form>
     <div class="result" id="result-lookup-phrase"></div>
+  </section>
+
+  <!-- ===================== BROWSE PARTICLES ===================== -->
+  <section class="panel" id="browse-particle" data-panel>
+    <div class="panel-head">
+      <h2>All particles</h2>
+      <p class="hint">Hover a particle to see its type and meaning. Click it to open the full entry.</p>
+    </div>
+    <div class="browse-list" id="browse-list-particles"></div>
+  </section>
+
+  <!-- ===================== BROWSE WORDS ===================== -->
+  <section class="panel" id="browse-word" data-panel>
+    <div class="panel-head">
+      <h2>All words</h2>
+      <p class="hint">Hover a word to see its meaning. Click it to open the full entry.</p>
+    </div>
+    <div class="browse-list" id="browse-list-words"></div>
+  </section>
+
+  <!-- ===================== BROWSE PHRASES ===================== -->
+  <section class="panel" id="browse-phrase" data-panel>
+    <div class="panel-head">
+      <h2>All phrases</h2>
+      <p class="hint">Hover a phrase to see its meaning. Click it to open the full entry.</p>
+    </div>
+    <div class="browse-list" id="browse-list-phrases"></div>
+  </section>
+
+  <!-- ===================== DETAIL PARTICLE ===================== -->
+  <section class="panel" id="detail-particle" data-panel>
+    <div class="panel-head">
+      <a href="#" class="back-link" data-back-tab="browse-particle">&larr; Back to all particles</a>
+      <h2 id="detail-particle-title">Particle</h2>
+    </div>
+    <div class="result" id="detail-particle-body"></div>
+    <div class="form-actions">
+      <button class="btn btn-accent" id="edit-particle-btn" type="button">Edit</button>
+    </div>
+  </section>
+
+  <!-- ===================== DETAIL WORD ===================== -->
+  <section class="panel" id="detail-word" data-panel>
+    <div class="panel-head">
+      <a href="#" class="back-link" data-back-tab="browse-word">&larr; Back to all words</a>
+      <h2 id="detail-word-title">Word</h2>
+    </div>
+    <div class="result" id="detail-word-body"></div>
+    <div class="form-actions">
+      <button class="btn btn-accent" id="edit-word-btn" type="button">Edit</button>
+    </div>
+  </section>
+
+  <!-- ===================== DETAIL PHRASE ===================== -->
+  <section class="panel" id="detail-phrase" data-panel>
+    <div class="panel-head">
+      <a href="#" class="back-link" data-back-tab="browse-phrase">&larr; Back to all phrases</a>
+      <h2 id="detail-phrase-title">Phrase</h2>
+    </div>
+    <div class="result" id="detail-phrase-body"></div>
+    <div class="form-actions">
+      <button class="btn btn-accent" id="edit-phrase-btn" type="button">Edit</button>
+    </div>
   </section>
 
   <!-- ===================== ADD PARTICLE ===================== -->
