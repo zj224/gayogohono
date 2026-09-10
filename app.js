@@ -452,12 +452,6 @@ function saveStoreToCookies(storeName) {
   setCookie(`gyh_${storeName}_n`, String(chunks.length));
 }
 
-function clearStoreCookies(storeName) {
-  const count = parseInt(getCookie(`gyh_${storeName}_n`) || "0", 10);
-  for (let i = 0; i < count; i++) deleteCookie(`gyh_${storeName}_${i}`);
-  deleteCookie(`gyh_${storeName}_n`);
-}
-
 function loadStoreFromCookies(storeName) {
   const count = parseInt(getCookie(`gyh_${storeName}_n`) || "0", 10);
   if (!count) return null;
@@ -576,46 +570,44 @@ function setSyncStatus(kind, text) {
   document.getElementById("syncText").textContent = text;
 }
 
-/* Once a store has a cookie snapshot, every later visit reads that cached
-   copy and never checks GitHub again — so anything newly published (or
-   dropped straight into the repo by hand) won't show up until the cookie is
-   cleared. Pass force:true (see refreshFromGithub()) to bypass the cache. */
-async function initApp(force = false) {
+/* GitHub is always tried first on every load — the cookie snapshot is only
+   a fallback for when GitHub can't be reached (offline), not the default
+   source, so newly published data (or a file dropped straight into the repo
+   by hand) always shows up without any manual step. */
+async function initApp() {
   setSyncStatus("", "loading…");
 
-  const missing = [];
-  for (const storeName of Object.keys(GROUP_FOLDER)) {
-    const fromCookie = force ? null : loadStoreFromCookies(storeName);
-    if (fromCookie) state[storeName] = fromCookie;
-    else missing.push(storeName);
-  }
-
-  if (missing.length === 0) {
-    setSyncStatus("ok", "loaded from this browser");
-  } else {
-    try {
-      const tree = await fetchGithubTree(GITHUB_BRANCH_DEFAULT);
-      await Promise.all(
-        missing.map(async (storeName) => {
-          state[storeName] = await fetchStoreFromGithub(storeName, tree);
-          saveStoreToCookies(storeName);
-        })
-      );
-      setSyncStatus("ok", missing.length === 3 ? "loaded from GitHub" : "loaded from GitHub + this browser");
-    } catch (err) {
-      console.error(err);
-      setSyncStatus("warn", "could not reach GitHub — starting empty");
+  try {
+    const tree = await fetchGithubTree(GITHUB_BRANCH_DEFAULT);
+    await Promise.all(
+      Object.keys(GROUP_FOLDER).map(async (storeName) => {
+        state[storeName] = await fetchStoreFromGithub(storeName, tree);
+        saveStoreToCookies(storeName);
+      })
+    );
+    setSyncStatus("ok", "loaded from GitHub");
+  } catch (err) {
+    console.error(err);
+    const missing = [];
+    for (const storeName of Object.keys(GROUP_FOLDER)) {
+      const fromCookie = loadStoreFromCookies(storeName);
+      if (fromCookie) state[storeName] = fromCookie;
+      else missing.push(storeName);
     }
+    setSyncStatus("warn", missing.length === 0 ? "could not reach GitHub — showing last loaded copy" : "could not reach GitHub — starting empty");
   }
 
   refreshDatalists();
   renderAllBrowseLists();
 }
 
+/* Manual re-sync mid-session, e.g. after someone else just published while
+   you were working. Loading itself already always re-fetches (see above),
+   so this only matters for a page that's been open a while — it still warns,
+   since anything added/edited here but not yet Published would be lost. */
 async function refreshFromGithub() {
   if (!confirm("Reload all data from GitHub? Anything added or edited here since your last Publish will be lost.")) return;
-  Object.keys(GROUP_FOLDER).forEach(clearStoreCookies);
-  await initApp(true);
+  await initApp();
 }
 
 function wireRefreshButton() {

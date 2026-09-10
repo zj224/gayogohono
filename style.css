@@ -75,18 +75,6 @@ code { font-family: var(--mono); }
 .dot.ok { background: var(--ok); }
 .dot.warn { background: var(--warn); }
 
-.btn-icon {
-  background: transparent;
-  border: none;
-  color: var(--ink-muted);
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0.15rem;
-  cursor: pointer;
-  border-radius: 4px;
-}
-.btn-icon:hover { color: var(--ink); background: var(--panel-raised); }
-
 /* ------------------------------------------------------------------ tabs */
 
 .tabs {

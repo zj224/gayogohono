@@ -36,4 +36,4 @@ if __name__ == "__main__":
     
     # lookup_word() 
     # lookup_particle("sa")
-    lookup_phrase("d{en}{?}ho{?}d{en}{?} {en}:gi{?} ne{?}")
+    #lookup_phrase("d{en}{?}ho{?}d{en}{?} {en}:gi{?} ne{?}")

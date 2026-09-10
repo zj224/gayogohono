@@ -128,5 +128,69 @@
     ],
     "type": "adverb",
     "word": "{en}h{en}:{?}"
+  },
+  "gahgwi{?}sgwa:dih": {
+    "meaning": "the far East (Asia)",
+    "notes": "",
+    "particles": [
+      "gahgwi{?}sgwa:dih"
+    ],
+    "type": "noun",
+    "word": "gahgwi{?}sgwa:dih"
+  },
+  "gahgwi{?}sgwa:dihho:n{on}{?}": {
+    "meaning": "people of the far East (Asian people)",
+    "notes": "",
+    "particles": [
+      "gahgwi{?}sgwa:dih",
+      "ho:n{on}{?}"
+    ],
+    "type": "noun",
+    "word": "gahgwi{?}sgwa:dihho:n{on}{?}"
+  },
+  "nigawen{o!}{?}d{en}:": {
+    "meaning": "the language",
+    "notes": "",
+    "particles": [
+      "nigaw{en}n{o!}{?}d{en}:"
+    ],
+    "type": "noun",
+    "word": "nigawen{o!}{?}d{en}:"
+  },
+  "hodigahad{i!}:yo:": {
+    "meaning": "the ones with nice eyes (I think??, tbd)",
+    "notes": "",
+    "particles": [
+      "hodigahad{i!}:yo:"
+    ],
+    "type": "noun",
+    "word": "hodigahad{i!}:yo:"
+  },
+  "h{on!}gweh": {
+    "meaning": "people",
+    "notes": "",
+    "particles": [
+      "h{on!}gweh"
+    ],
+    "type": "noun",
+    "word": "h{on!}gweh"
+  },
+  "dwag{a!}hd{en}gy{on}:": {
+    "meaning": "place",
+    "notes": "",
+    "particles": [
+      "dwag{a!}hd{en}gy{on}:"
+    ],
+    "type": "noun",
+    "word": "dwag{a!}hd{en}gy{on}:"
+  },
+  "sy{a!}do:": {
+    "meaning": "write",
+    "notes": "",
+    "particles": [
+      "sy{a!}do:"
+    ],
+    "type": "verb",
+    "word": "sy{a!}do:"
   }
 }
