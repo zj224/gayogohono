@@ -19,6 +19,15 @@
     "type": "verb",
     "word": "aknig{on}ha{en}da{?}s"
   },
+  "d{en}{?}ho{?}d{en}{?}": {
+    "meaning": "what",
+    "notes": "",
+    "particles": [
+      "d{en}{?}ho{?}d{en}{?}"
+    ],
+    "type": "pronoun",
+    "word": "d{en}{?}ho{?}d{en}{?}"
+  },
   "gaeya{?}dag{en!}:nha{?}": {
     "meaning": "parent",
     "notes": {},
@@ -53,6 +62,15 @@
     ],
     "type": "conjunction",
     "word": "ne:{?}hni{?}"
+  },
+  "ne{?}": {
+    "meaning": "for",
+    "notes": "",
+    "particles": [
+      "ne{?}"
+    ],
+    "type": "particle",
+    "word": "ne{?}"
   },
   "nigaw{en}n{o!}{?}d{en}:": {
     "meaning": "the language",
@@ -110,23 +128,5 @@
     ],
     "type": "adverb",
     "word": "{en}h{en}:{?}"
-  },
-  "d{en}{?}ho{?}d{en}{?}": {
-    "word": "d{en}{?}ho{?}d{en}{?}",
-    "meaning": "what",
-    "type": "pronoun",
-    "particles": [
-      "d{en}{?}ho{?}d{en}{?}"
-    ],
-    "notes": ""
-  },
-  "ne{?}": {
-    "word": "ne{?}",
-    "meaning": "for",
-    "type": "particle",
-    "particles": [
-      "ne{?}"
-    ],
-    "notes": ""
   }
 }

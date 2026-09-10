@@ -3,8 +3,11 @@
 /* =========================================================================
    Gayogo̱hó:nǫˀ Lexicon — front end
    Ports the coloring/shorthand logic from shorthands.py + dictionary.py to
-   the browser, stores the working dictionary in cookies, and can push
-   particles.json / words.json / phrases.json to a branch on GitHub.
+   the browser, stores the working dictionary in cookies, and can push it to
+   a branch on GitHub as one JSON file per group — Particles/particles_
+   pronoun.json, Particles/particles_other.json (for ungrouped entries), and
+   the same under Words/ and Phrases/ — so each grammatical family lives in
+   its own file instead of one big particles.json / words.json / phrases.json.
    ========================================================================= */
 
 const GITHUB_OWNER = "zj224";
@@ -13,7 +16,37 @@ const GITHUB_BRANCH_DEFAULT = "main";
 const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH_DEFAULT}/`;
 const API_BASE = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
-const STORE_FILES = { particles: "particles.json", words: "words.json", phrases: "phrases.json" };
+const GROUP_FOLDER = { particles: "Particles", words: "Words", phrases: "Phrases" };
+
+/* "possessive pronouns" -> "possessive_pronouns"; no group -> "other". */
+function slugifyGroup(name) {
+  const slug = (name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return slug || "other";
+}
+
+function groupFileName(storeName, group) {
+  return `${storeName}_${slugifyGroup(group)}.json`;
+}
+
+/* Splits a store's entries into per-group shards, e.g. { "particles_pronoun.json":
+   {...}, "particles_other.json": {...} }. An entry belonging to more than one
+   group is duplicated into each of those groups' shards. */
+function buildShards(storeName) {
+  const shards = new Map();
+  Object.entries(state[storeName]).forEach(([key, entry]) => {
+    const groups = entry.groups && entry.groups.length ? entry.groups : [null];
+    groups.forEach((g) => {
+      const filename = groupFileName(storeName, g);
+      if (!shards.has(filename)) shards.set(filename, {});
+      shards.get(filename)[key] = entry;
+    });
+  });
+  return shards;
+}
 
 const GRAMMAR_TYPES = ["pronoun", "verb", "noun", "particle", "adjective", "adverb", "conjunction"];
 
@@ -201,6 +234,24 @@ function appendMeaningsBlock(container, entry, wrapType) {
   }
 }
 
+function appendSpellingsAndGroups(container, entry) {
+  if (entry.spellings && entry.spellings.length) {
+    const line = el("div", { class: "result-line" });
+    line.append("also spelled: ");
+    line.append(entry.spellings.map(translateToGayogohono).join(", "));
+    container.appendChild(line);
+  }
+  if (entry.groups && entry.groups.length) {
+    const line = el("div", { class: "result-line" });
+    line.append("groups: ");
+    entry.groups.forEach((g, i) => {
+      if (i > 0) line.append(" ");
+      line.appendChild(el("span", { class: "group-chip", text: g }));
+    });
+    container.appendChild(line);
+  }
+}
+
 function appendNotesAndExamples(container, entry) {
   if (entry.notes) {
     container.appendChild(el("div", { class: "result-line", text: `notes: ${entry.notes}` }));
@@ -236,6 +287,7 @@ function renderLookupParticle(key, containerId = "result-lookup-particle") {
   container.appendChild(meaningLine);
 
   appendMeaningsBlock(container, p, p.type);
+  appendSpellingsAndGroups(container, p);
   appendNotesAndExamples(container, p);
 }
 
@@ -258,6 +310,7 @@ function renderLookupWord(key, containerId = "result-lookup-word") {
   container.appendChild(meaningLine);
 
   appendMeaningsBlock(container, w);
+  appendSpellingsAndGroups(container, w);
 
   if (particleKeys.length) {
     const madeOfLine = el("div", { class: "result-line" });
@@ -291,6 +344,7 @@ function renderLookupPhrase(key, containerId = "result-lookup-phrase") {
   container.appendChild(meaningLine);
 
   appendMeaningsBlock(container, ph);
+  appendSpellingsAndGroups(container, ph);
 
   if (wordKeys.length) {
     const madeOfLine = el("div", { class: "result-line" });
@@ -390,10 +444,31 @@ function loadStoreFromCookies(storeName) {
 /* Import from GitHub + init                                             */
 /* --------------------------------------------------------------------- */
 
-async function fetchStoreFromGithub(storeName) {
-  const res = await fetch(RAW_BASE + STORE_FILES[storeName], { cache: "no-store" });
-  if (!res.ok) throw new Error(`GitHub fetch failed for ${STORE_FILES[storeName]}: ${res.status}`);
-  return res.json();
+/* The repo tree is fetched once (one API call) so all three stores' group
+   files can be located; each shard is then pulled from the raw/cached CDN,
+   not the rate-limited API, and merged back into one flat store object. */
+async function fetchGithubTree() {
+  const res = await fetch(`${API_BASE}/git/trees/${GITHUB_BRANCH_DEFAULT}?recursive=1`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`GitHub tree fetch failed: ${res.status}`);
+  const data = await res.json();
+  return data.tree || [];
+}
+
+async function fetchStoreFromGithub(storeName, tree) {
+  const prefix = `${GROUP_FOLDER[storeName]}/`;
+  const paths = tree
+    .filter((entry) => entry.type === "blob" && entry.path.startsWith(prefix) && entry.path.endsWith(".json"))
+    .map((entry) => entry.path);
+
+  const merged = {};
+  await Promise.all(
+    paths.map(async (path) => {
+      const res = await fetch(RAW_BASE + path, { cache: "no-store" });
+      if (!res.ok) throw new Error(`GitHub fetch failed for ${path}: ${res.status}`);
+      Object.assign(merged, await res.json());
+    })
+  );
+  return merged;
 }
 
 function setSyncStatus(kind, text) {
@@ -405,7 +480,7 @@ async function initApp() {
   setSyncStatus("", "loading…");
 
   const missing = [];
-  for (const storeName of Object.keys(STORE_FILES)) {
+  for (const storeName of Object.keys(GROUP_FOLDER)) {
     const fromCookie = loadStoreFromCookies(storeName);
     if (fromCookie) state[storeName] = fromCookie;
     else missing.push(storeName);
@@ -415,9 +490,10 @@ async function initApp() {
     setSyncStatus("ok", "loaded from this browser");
   } else {
     try {
+      const tree = await fetchGithubTree();
       await Promise.all(
         missing.map(async (storeName) => {
-          state[storeName] = await fetchStoreFromGithub(storeName);
+          state[storeName] = await fetchStoreFromGithub(storeName, tree);
           saveStoreToCookies(storeName);
         })
       );
@@ -446,10 +522,21 @@ function fillDatalist(id, keys) {
   });
 }
 
+function allGroupsIn(storeName) {
+  const groups = new Set();
+  Object.values(state[storeName]).forEach((entry) => {
+    (entry.groups || []).forEach((g) => groups.add(g));
+  });
+  return groups;
+}
+
 function refreshDatalists() {
   fillDatalist("particleKeysList", Object.keys(state.particles));
   fillDatalist("wordKeysList", Object.keys(state.words));
   fillDatalist("phraseKeysList", Object.keys(state.phrases));
+  fillDatalist("particleGroupsList", allGroupsIn("particles"));
+  fillDatalist("wordGroupsList", allGroupsIn("words"));
+  fillDatalist("phraseGroupsList", allGroupsIn("phrases"));
 }
 
 /* --------------------------------------------------------------------- */
@@ -459,6 +546,8 @@ function refreshDatalists() {
 function activatePanel(panelId) {
   document.querySelectorAll("[data-panel]").forEach((p) => p.classList.toggle("active", p.id === panelId));
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === panelId));
+  document.querySelectorAll(".tab-group").forEach((g) => g.classList.toggle("has-active", !!g.querySelector(".tab.active")));
+  document.querySelectorAll(".tab-group.open").forEach((g) => g.classList.remove("open"));
   if (panelId.startsWith("browse-")) renderBrowseList(panelId.slice("browse-".length) + "s");
 }
 
@@ -474,51 +563,95 @@ function wireTabs() {
   });
 }
 
+/* Dropdown groups open on hover via CSS; this adds click-to-toggle so they
+   also work on touch devices, which have no hover. */
+function wireTabDropdowns() {
+  document.querySelectorAll(".tab-group-label").forEach((label) => {
+    label.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const group = label.closest(".tab-group");
+      const wasOpen = group.classList.contains("open");
+      document.querySelectorAll(".tab-group.open").forEach((g) => g.classList.remove("open"));
+      if (!wasOpen) group.classList.add("open");
+    });
+  });
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".tab-group.open").forEach((g) => g.classList.remove("open"));
+  });
+}
+
 /* --------------------------------------------------------------------- */
 /* Browse lists — every particle/word/phrase, colored, with a tooltip and */
 /* a link through to its detail page.                                    */
 /* --------------------------------------------------------------------- */
 
+function buildBrowseRow(storeName, key) {
+  const entry = state[storeName][key];
+  const row = el("div", { class: "browse-row" });
+
+  const link = document.createElement("a");
+  link.href = "#";
+  link.className = "browse-key";
+  link.dataset.store = storeName;
+  link.dataset.key = key;
+  link.dataset.tooltip =
+    storeName === "particles" ? `${entry.type}: ${glossPlainText(entry.meaning)}` : glossPlainText(entry.meaning);
+
+  if (storeName === "particles") {
+    link.appendChild(coloredSpan(translateToGayogohono(entry.text), entry.type));
+  } else if (storeName === "words") {
+    link.appendChild(coloredWordText(key));
+  } else {
+    const wordKeys = entry.words || [];
+    if (wordKeys.length) appendJoined(link, wordKeys.map((wk) => coloredWordText(wk)), " ");
+    else link.textContent = translateToGayogohono(entry.phrase);
+  }
+  row.appendChild(link);
+
+  const meaning = el("div", { class: "browse-meaning" });
+  meaning.appendChild(glossFragment(entry.meaning));
+  row.appendChild(meaning);
+
+  return row;
+}
+
+/* Entries with no group are collected under a final "Ungrouped" section; an
+   entry belonging to more than one group appears once under each of them. */
 function renderBrowseList(storeName) {
   const singular = STORE_SINGULAR[storeName];
   const container = document.getElementById(`browse-list-${storeName}`);
   container.innerHTML = "";
 
-  const keys = Object.keys(state[storeName]).sort();
+  const keys = Object.keys(state[storeName]);
   if (!keys.length) {
     container.appendChild(el("p", { class: "result-empty", text: `No ${singular}s yet.` }));
     return;
   }
 
+  const groupMap = new Map();
+  const ungrouped = [];
   keys.forEach((key) => {
-    const entry = state[storeName][key];
-    const row = el("div", { class: "browse-row" });
-
-    const link = document.createElement("a");
-    link.href = "#";
-    link.className = "browse-key";
-    link.dataset.store = storeName;
-    link.dataset.key = key;
-    link.dataset.tooltip =
-      storeName === "particles" ? `${entry.type}: ${glossPlainText(entry.meaning)}` : glossPlainText(entry.meaning);
-
-    if (storeName === "particles") {
-      link.appendChild(coloredSpan(translateToGayogohono(entry.text), entry.type));
-    } else if (storeName === "words") {
-      link.appendChild(coloredWordText(key));
-    } else {
-      const wordKeys = entry.words || [];
-      if (wordKeys.length) appendJoined(link, wordKeys.map((wk) => coloredWordText(wk)), " ");
-      else link.textContent = translateToGayogohono(entry.phrase);
+    const groups = state[storeName][key].groups;
+    if (!groups || !groups.length) {
+      ungrouped.push(key);
+      return;
     }
-    row.appendChild(link);
-
-    const meaning = el("div", { class: "browse-meaning" });
-    meaning.appendChild(glossFragment(entry.meaning));
-    row.appendChild(meaning);
-
-    container.appendChild(row);
+    groups.forEach((g) => {
+      if (!groupMap.has(g)) groupMap.set(g, []);
+      groupMap.get(g).push(key);
+    });
   });
+
+  const groupNames = [...groupMap.keys()].sort((a, b) => a.localeCompare(b));
+  groupNames.forEach((groupName) => {
+    container.appendChild(el("h3", { class: "browse-group-heading", text: groupName }));
+    groupMap.get(groupName).sort().forEach((key) => container.appendChild(buildBrowseRow(storeName, key)));
+  });
+
+  if (ungrouped.length) {
+    if (groupNames.length) container.appendChild(el("h3", { class: "browse-group-heading", text: "Ungrouped" }));
+    ungrouped.sort().forEach((key) => container.appendChild(buildBrowseRow(storeName, key)));
+  }
 }
 
 function renderAllBrowseLists() {
@@ -576,6 +709,8 @@ function fillParticleForm(key) {
   );
   form.querySelector('[name="meaning"]').value = p.meaning || "";
   form.querySelector('[name="meanings"]').value = (p.meanings || []).join("\n");
+  form.querySelector('[name="spellings"]').value = (p.spellings || []).join("\n");
+  form.querySelector('[name="groups"]').value = (p.groups || []).join(" + ");
   form.querySelector('[name="notes"]').value = notesAsString(p.notes);
   form.querySelector('[name="key"]').dispatchEvent(new Event("blur"));
 }
@@ -595,6 +730,8 @@ function fillWordForm(key) {
   form.querySelector('[name="meaning"]').value = w.meaning || "";
   form.querySelector('[name="particles"]').value = (w.particles || []).join(" + ");
   form.querySelector('[name="meanings"]').value = (w.meanings || []).join("\n");
+  form.querySelector('[name="spellings"]').value = (w.spellings || []).join("\n");
+  form.querySelector('[name="groups"]').value = (w.groups || []).join(" + ");
   form.querySelector('[name="notes"]').value = notesAsString(w.notes);
   form.querySelector('[name="key"]').dispatchEvent(new Event("blur"));
 }
@@ -608,6 +745,8 @@ function fillPhraseForm(key) {
   form.querySelector('[name="meaning"]').value = ph.meaning || "";
   form.querySelector('[name="words"]').value = (ph.words || []).join(" + ");
   form.querySelector('[name="meanings"]').value = (ph.meanings || []).join("\n");
+  form.querySelector('[name="spellings"]').value = (ph.spellings || []).join("\n");
+  form.querySelector('[name="groups"]').value = (ph.groups || []).join(" + ");
   form.querySelector('[name="notes"]').value = notesAsString(ph.notes);
   form.querySelector('[name="key"]').dispatchEvent(new Event("blur"));
 }
@@ -760,10 +899,14 @@ function wireAddParticleForm() {
     const ptype = resolveType(form.querySelector('select[name="ptype"]'), form.querySelector('input[name="ptypeCustom"]'));
     const meaning = fd.get("meaning").trim();
     const meaningsExtra = splitLines(fd.get("meanings"));
+    const spellingsExtra = splitLines(fd.get("spellings"));
+    const groups = parsePlusList(fd.get("groups"));
     const notes = fd.get("notes").trim();
 
     const newFields = { text, meaning, type: ptype, notes };
     if (meaningsExtra.length) newFields.meanings = meaningsExtra;
+    if (spellingsExtra.length) newFields.spellings = spellingsExtra;
+    if (groups.length) newFields.groups = groups;
 
     const { created } = mergeOrCreate(state.particles, key, newFields);
     saveStoreToCookies("particles");
@@ -786,10 +929,14 @@ function wireAddWordForm() {
     const meaning = fd.get("meaning").trim();
     const particleKeys = parsePlusList(fd.get("particles")).map(stripDevoicing);
     const meaningsExtra = splitLines(fd.get("meanings"));
+    const spellingsExtra = splitLines(fd.get("spellings"));
+    const groups = parsePlusList(fd.get("groups"));
     const notes = fd.get("notes").trim();
 
     const newFields = { word, meaning, type: wtype, particles: particleKeys, notes };
     if (meaningsExtra.length) newFields.meanings = meaningsExtra;
+    if (spellingsExtra.length) newFields.spellings = spellingsExtra;
+    if (groups.length) newFields.groups = groups;
 
     const { created } = mergeOrCreate(state.words, key, newFields);
     saveStoreToCookies("words");
@@ -812,10 +959,14 @@ function wireAddPhraseForm() {
     const wordsRaw = fd.get("words").trim();
     const wordKeys = wordsRaw ? parsePlusList(wordsRaw) : phrase.split(/\s+/).filter(Boolean);
     const meaningsExtra = splitLines(fd.get("meanings"));
+    const spellingsExtra = splitLines(fd.get("spellings"));
+    const groups = parsePlusList(fd.get("groups"));
     const notes = fd.get("notes").trim();
 
     const newFields = { phrase, meaning, words: wordKeys, notes };
     if (meaningsExtra.length) newFields.meanings = meaningsExtra;
+    if (spellingsExtra.length) newFields.spellings = spellingsExtra;
+    if (groups.length) newFields.groups = groups;
 
     const { created } = mergeOrCreate(state.phrases, key, newFields);
     saveStoreToCookies("phrases");
@@ -888,31 +1039,57 @@ async function pushDictionary() {
       throw new Error(`Could not create branch (${createRes.status}): ${errBody.message || "unknown error"}`);
     }
 
-    for (const [storeName, filename] of Object.entries(STORE_FILES)) {
-      logPublish(`Pushing ${filename}…`);
-      let sha = null;
-      const contentsRes = await githubRequest(`/contents/${filename}?ref=${encodeURIComponent(branch)}`, token);
-      if (contentsRes.ok) {
-        sha = (await contentsRes.json()).sha;
-      } else if (contentsRes.status !== 404) {
-        throw new Error(`Could not read current ${filename} on branch (${contentsRes.status}).`);
+    for (const [storeName, folder] of Object.entries(GROUP_FOLDER)) {
+      const shards = buildShards(storeName);
+
+      logPublish(`Listing ${folder}/ on "${branch}"…`);
+      const existingShas = new Map();
+      const listRes = await githubRequest(`/contents/${folder}?ref=${encodeURIComponent(branch)}`, token);
+      if (listRes.ok) {
+        (await listRes.json()).forEach((item) => {
+          if (item.type === "file") existingShas.set(item.name, item.sha);
+        });
+      } else if (listRes.status !== 404) {
+        throw new Error(`Could not list ${folder}/ on branch (${listRes.status}).`);
       }
 
-      const putRes = await githubRequest(`/contents/${filename}`, token, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: `Update ${filename} via Gayogo̱hó:nǫˀ web app`,
-          content: utf8ToBase64(JSON.stringify(state[storeName], null, 2)),
-          branch,
-          ...(sha ? { sha } : {}),
-        }),
-      });
-      if (!putRes.ok) {
-        const errBody = await putRes.json().catch(() => ({}));
-        throw new Error(`Failed to push ${filename} (${putRes.status}): ${errBody.message || "unknown error"}`);
+      for (const [filename, data] of shards.entries()) {
+        const path = `${folder}/${filename}`;
+        logPublish(`Pushing ${path}…`);
+        const putRes = await githubRequest(`/contents/${path}`, token, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: `Update ${path} via Gayogo̱hó:nǫˀ web app`,
+            content: utf8ToBase64(JSON.stringify(data, null, 2)),
+            branch,
+            ...(existingShas.has(filename) ? { sha: existingShas.get(filename) } : {}),
+          }),
+        });
+        if (!putRes.ok) {
+          const errBody = await putRes.json().catch(() => ({}));
+          throw new Error(`Failed to push ${path} (${putRes.status}): ${errBody.message || "unknown error"}`);
+        }
+        logPublish(`✓ ${path} pushed.`, "ok");
+        existingShas.delete(filename);
       }
-      logPublish(`✓ ${filename} pushed.`, "ok");
+
+      // Anything left in existingShas is a group file from a previous publish
+      // that no longer has any entries (its group was renamed or emptied).
+      for (const [filename, sha] of existingShas.entries()) {
+        const path = `${folder}/${filename}`;
+        logPublish(`Removing stale ${path}…`);
+        const delRes = await githubRequest(`/contents/${path}`, token, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: `Remove stale ${path} via Gayogo̱hó:nǫˀ web app`, sha, branch }),
+        });
+        if (!delRes.ok) {
+          const errBody = await delRes.json().catch(() => ({}));
+          throw new Error(`Failed to remove ${path} (${delRes.status}): ${errBody.message || "unknown error"}`);
+        }
+        logPublish(`✓ ${path} removed.`, "ok");
+      }
     }
 
     logPublish(`Done — branch "${branch}" is up to date.`, "ok");
@@ -924,6 +1101,19 @@ async function pushDictionary() {
   }
 }
 
+/* Branch name + token are remembered across visits via cookies, so this
+   panel doesn't need to be refilled every time it's opened. */
+function wirePublishPanelPersistence() {
+  const branchInput = document.getElementById("branchName");
+  const tokenInput = document.getElementById("githubToken");
+
+  branchInput.value = getCookie("gyh_publish_branch") || "";
+  tokenInput.value = getCookie("gyh_publish_token") || "";
+
+  branchInput.addEventListener("input", () => setCookie("gyh_publish_branch", branchInput.value.trim()));
+  tokenInput.addEventListener("input", () => setCookie("gyh_publish_token", tokenInput.value.trim()));
+}
+
 function wirePublishPanel() {
   document.getElementById("openPublish").addEventListener("click", () => {
     document.getElementById("publishOverlay").hidden = false;
@@ -932,6 +1122,7 @@ function wirePublishPanel() {
     document.getElementById("publishOverlay").hidden = true;
   });
   document.getElementById("pushButton").addEventListener("click", pushDictionary);
+  wirePublishPanelPersistence();
 }
 
 /* --------------------------------------------------------------------- */
@@ -992,6 +1183,7 @@ function initTooltips() {
 
 document.addEventListener("DOMContentLoaded", () => {
   wireTabs();
+  wireTabDropdowns();
   wireTypeSelects();
   wireLookupForms();
   wireAddParticleForm();

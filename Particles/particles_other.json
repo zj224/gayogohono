@@ -5,14 +5,14 @@
     "text": "ak",
     "type": "pronoun"
   },
-  "nig{on}ha{en}da{?}s": {
-    "meaning": "understand",
+  "d{en}{?}ho{?}d{en}{?}": {
+    "meaning": "what",
     "notes": "",
-    "text": "nig{on}ha{en}da{?}s",
-    "type": "verb"
+    "text": "d{en}{?}ho{?}d{en}{?}",
+    "type": "pronoun"
   },
   "g": {
-    "meaning": "{I, pronoun}",
+    "meaning": "I",
     "notes": "",
     "text": "g",
     "type": "pronoun"
@@ -35,8 +35,20 @@
     "text": "ne:{?}hni{?}",
     "type": "conjunction"
   },
+  "ne{?}": {
+    "meaning": "for",
+    "notes": "",
+    "text": "ne{?}",
+    "type": "particle"
+  },
+  "nig{on}ha{en}da{?}s": {
+    "meaning": "understand",
+    "notes": "",
+    "text": "nig{on}ha{en}da{?}s",
+    "type": "verb"
+  },
   "s": {
-    "meaning": "{you, pronoun}",
+    "meaning": "you",
     "notes": "",
     "text": "s",
     "type": "pronoun"
@@ -45,6 +57,12 @@
     "meaning": "you",
     "notes": "",
     "text": "sa",
+    "type": "pronoun"
+  },
+  "s{on}:naht": {
+    "meaning": "who",
+    "notes": "",
+    "text": "s{on}:naht",
     "type": "pronoun"
   },
   "t{en}{?} d{?}e": {
@@ -58,23 +76,5 @@
     "notes": "",
     "text": "{en}h{en}:{?}",
     "type": "adverb"
-  },
-  "s{on}:naht": {
-    "text": "s{on}:naht",
-    "meaning": "who",
-    "type": "pronoun",
-    "notes": ""
-  },
-  "d{en}{?}ho{?}d{en}{?}": {
-    "text": "d{en}{?}ho{?}d{en}{?}",
-    "meaning": "what",
-    "type": "pronoun",
-    "notes": ""
-  },
-  "ne{?}": {
-    "text": "ne{?}",
-    "meaning": "for",
-    "type": "particle",
-    "notes": ""
   }
 }
