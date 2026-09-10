@@ -1,0 +1,50 @@
+{
+    "ga": {
+        "meaning": "it (non-human)",
+        "notes": "",
+        "text": "ga",
+        "type": "pronoun"
+    },
+    "gadi": {
+        "meaning": "they (non-human)",
+        "notes": "",
+        "text": "gadi",
+        "type": "pronoun"
+    },
+    "sni": {
+        "meaning": "you two",
+        "notes": "",
+        "text": "sni",
+        "type": "pronoun"
+    },
+    "swa": {
+        "meaning": "you all",
+        "notes": "",
+        "text": "swa",
+        "type": "pronoun"
+    },
+    "kni": {
+        "meaning": "you (singular) and I",
+        "notes": "",
+        "text": "kni",
+        "type": "pronoun"
+    },
+    "akni": {
+        "meaning": "someone else and I",
+        "notes": "",
+        "text": "akni",
+        "type": "pronoun"
+    },
+    "dwa": {
+        "meaning": "you all and I",
+        "notes": "",
+        "text": "dwa",
+        "type": "pronoun"
+    },
+    "agwa": {
+        "meaning": "other people and I",
+        "notes": "",
+        "text": "agwa",
+        "type": "pronoun"
+    }
+}
