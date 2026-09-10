@@ -58,5 +58,23 @@
     "notes": "",
     "text": "{en}h{en}:{?}",
     "type": "adverb"
+  },
+  "s{on}:naht": {
+    "text": "s{on}:naht",
+    "meaning": "who",
+    "type": "pronoun",
+    "notes": ""
+  },
+  "d{en}{?}ho{?}d{en}{?}": {
+    "text": "d{en}{?}ho{?}d{en}{?}",
+    "meaning": "what",
+    "type": "pronoun",
+    "notes": ""
+  },
+  "ne{?}": {
+    "text": "ne{?}",
+    "meaning": "for",
+    "type": "particle",
+    "notes": ""
   }
 }
