@@ -452,6 +452,12 @@ function saveStoreToCookies(storeName) {
   setCookie(`gyh_${storeName}_n`, String(chunks.length));
 }
 
+function clearStoreCookies(storeName) {
+  const count = parseInt(getCookie(`gyh_${storeName}_n`) || "0", 10);
+  for (let i = 0; i < count; i++) deleteCookie(`gyh_${storeName}_${i}`);
+  deleteCookie(`gyh_${storeName}_n`);
+}
+
 function loadStoreFromCookies(storeName) {
   const count = parseInt(getCookie(`gyh_${storeName}_n`) || "0", 10);
   if (!count) return null;
@@ -492,17 +498,76 @@ function pathsForStore(storeName, tree) {
   return tree.filter((entry) => entry.type === "blob" && entry.path.startsWith(prefix) && entry.path.endsWith(".json"));
 }
 
+/* Reads the (Category, Group) a shard file implies from its own path, e.g.
+   "Particles/Pronouns/personal_pronouns_particles.json" -> group "Personal
+   Pronouns", category "Pronouns"; "Particles/Other/other_particles.json" ->
+   no group at all. This is what lets a JSON file dropped straight into the
+   right folder show up correctly in Browse without also having to carry
+   "groups"/"category" fields on every entry inside it. */
+function sectionFromPath(storeName, path) {
+  const parts = path.split("/");
+  const categoryFolder = parts[1];
+  const filename = parts[parts.length - 1];
+  const suffix = `_${storeName}.json`;
+  const slug = filename.endsWith(suffix) ? filename.slice(0, -suffix.length) : filename.replace(/\.json$/, "");
+  if (slug === "other") return { group: null, category: null };
+  const group = slug
+    .split("_")
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
+  const category = categoryFolder === OTHER_FOLDER ? null : categoryFolder;
+  return { group, category };
+}
+
+/* Folds one shard file's entries into `merged`, filling in any entry's
+   missing "groups"/"category" from where the file itself lives (see
+   sectionFromPath) rather than requiring those fields to already be on the
+   entry. A key found in more than one shard (an entry that belongs to
+   several groups) has its groups/category unioned rather than the later
+   file clobbering the earlier one. */
+function mergeShardInto(merged, shard, inferredGroup, inferredCategory) {
+  Object.entries(shard).forEach(([key, entry]) => {
+    const groups = new Set(entry.groups || []);
+    if (inferredGroup && ![...groups].some((g) => slugifyGroup(g) === slugifyGroup(inferredGroup))) {
+      groups.add(inferredGroup);
+    }
+    const withInferred = { ...entry };
+    if (groups.size) withInferred.groups = [...groups];
+    if (!withInferred.category && inferredCategory) withInferred.category = inferredCategory;
+
+    const existing = merged[key];
+    if (!existing) {
+      merged[key] = withInferred;
+      return;
+    }
+    const unionGroups = new Set([...(existing.groups || []), ...(withInferred.groups || [])]);
+    merged[key] = {
+      ...existing,
+      ...withInferred,
+      ...(unionGroups.size ? { groups: [...unionGroups] } : {}),
+      category: existing.category || withInferred.category,
+    };
+  });
+}
+
 async function fetchStoreFromGithub(storeName, tree) {
   const paths = pathsForStore(storeName, tree).map((entry) => entry.path);
 
   const merged = {};
-  await Promise.all(
+  const shardsInOrder = await Promise.all(
     paths.map(async (path) => {
       const res = await fetch(RAW_BASE + path, { cache: "no-store" });
       if (!res.ok) throw new Error(`GitHub fetch failed for ${path}: ${res.status}`);
-      Object.assign(merged, await res.json());
+      return { path, data: await res.json() };
     })
   );
+  // Merge sequentially (not inside the Promise.all above) so the union-merge
+  // in mergeShardInto is deterministic regardless of fetch completion order.
+  shardsInOrder.forEach(({ path, data }) => {
+    const { group, category } = sectionFromPath(storeName, path);
+    mergeShardInto(merged, data, group, category);
+  });
   return merged;
 }
 
@@ -511,12 +576,16 @@ function setSyncStatus(kind, text) {
   document.getElementById("syncText").textContent = text;
 }
 
-async function initApp() {
+/* Once a store has a cookie snapshot, every later visit reads that cached
+   copy and never checks GitHub again — so anything newly published (or
+   dropped straight into the repo by hand) won't show up until the cookie is
+   cleared. Pass force:true (see refreshFromGithub()) to bypass the cache. */
+async function initApp(force = false) {
   setSyncStatus("", "loading…");
 
   const missing = [];
   for (const storeName of Object.keys(GROUP_FOLDER)) {
-    const fromCookie = loadStoreFromCookies(storeName);
+    const fromCookie = force ? null : loadStoreFromCookies(storeName);
     if (fromCookie) state[storeName] = fromCookie;
     else missing.push(storeName);
   }
@@ -541,6 +610,16 @@ async function initApp() {
 
   refreshDatalists();
   renderAllBrowseLists();
+}
+
+async function refreshFromGithub() {
+  if (!confirm("Reload all data from GitHub? Anything added or edited here since your last Publish will be lost.")) return;
+  Object.keys(GROUP_FOLDER).forEach(clearStoreCookies);
+  await initApp(true);
+}
+
+function wireRefreshButton() {
+  document.getElementById("refreshFromGithub").addEventListener("click", refreshFromGithub);
 }
 
 /* --------------------------------------------------------------------- */
@@ -661,8 +740,10 @@ function buildBrowseRow(storeName, key) {
   return row;
 }
 
-/* Entries with no group are collected under a final "Ungrouped" section; an
-   entry belonging to more than one group appears once under each of them. */
+/* Two-level: Category heading > Group heading > rows, mirroring the
+   Category/Group folder layout entries publish to. A group with no Category
+   (or a truly ungrouped entry) is collected under a final "Other" section;
+   an entry belonging to more than one group appears once under each. */
 function renderBrowseList(storeName) {
   const singular = STORE_SINGULAR[storeName];
   const container = document.getElementById(`browse-list-${storeName}`);
@@ -674,28 +755,44 @@ function renderBrowseList(storeName) {
     return;
   }
 
-  const groupMap = new Map();
+  const categoryMap = new Map(); // category -> Map<group, keys[]>
   const ungrouped = [];
+
   keys.forEach((key) => {
-    const groups = state[storeName][key].groups;
-    if (!groups || !groups.length) {
+    const entry = state[storeName][key];
+    if (!entry.groups || !entry.groups.length) {
       ungrouped.push(key);
       return;
     }
-    groups.forEach((g) => {
+    const category = entry.category && entry.category.trim() ? entry.category : OTHER_FOLDER;
+    if (!categoryMap.has(category)) categoryMap.set(category, new Map());
+    const groupMap = categoryMap.get(category);
+    entry.groups.forEach((g) => {
       if (!groupMap.has(g)) groupMap.set(g, []);
       groupMap.get(g).push(key);
     });
   });
 
-  const groupNames = [...groupMap.keys()].sort((a, b) => a.localeCompare(b));
-  groupNames.forEach((groupName) => {
-    container.appendChild(el("h3", { class: "browse-group-heading", text: groupName }));
-    groupMap.get(groupName).sort().forEach((key) => container.appendChild(buildBrowseRow(storeName, key)));
+  const categoryNames = [...categoryMap.keys()].sort((a, b) => {
+    if (a === OTHER_FOLDER) return 1;
+    if (b === OTHER_FOLDER) return -1;
+    return a.localeCompare(b);
+  });
+
+  categoryNames.forEach((category) => {
+    container.appendChild(el("h2", { class: "browse-category-heading", text: category }));
+    const groupMap = categoryMap.get(category);
+    [...groupMap.keys()].sort((a, b) => a.localeCompare(b)).forEach((groupName) => {
+      container.appendChild(el("h3", { class: "browse-group-heading", text: groupName }));
+      groupMap.get(groupName).sort().forEach((key) => container.appendChild(buildBrowseRow(storeName, key)));
+    });
   });
 
   if (ungrouped.length) {
-    if (groupNames.length) container.appendChild(el("h3", { class: "browse-group-heading", text: "Ungrouped" }));
+    if (!categoryNames.includes(OTHER_FOLDER)) {
+      container.appendChild(el("h2", { class: "browse-category-heading", text: OTHER_FOLDER }));
+    }
+    container.appendChild(el("h3", { class: "browse-group-heading", text: "Ungrouped" }));
     ungrouped.sort().forEach((key) => container.appendChild(buildBrowseRow(storeName, key)));
   }
 }
@@ -1243,6 +1340,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireBrowseLinks();
   wireEditButtons();
   wirePublishPanel();
+  wireRefreshButton();
   initTooltips();
   initApp();
 });

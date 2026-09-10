@@ -75,6 +75,18 @@ code { font-family: var(--mono); }
 .dot.ok { background: var(--ok); }
 .dot.warn { background: var(--warn); }
 
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.15rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.btn-icon:hover { color: var(--ink); background: var(--panel-raised); }
+
 /* ------------------------------------------------------------------ tabs */
 
 .tabs {
@@ -240,6 +252,17 @@ main { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
   gap: 0.1rem;
 }
 
+.browse-category-heading {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 1.8rem 0 0.4rem;
+  padding: 0 0.75rem 0.4rem;
+  border-bottom: 1px solid var(--hairline);
+}
+.browse-category-heading:first-child { margin-top: 0; }
+
 .browse-group-heading {
   font-family: var(--sans);
   font-size: 0.76rem;
@@ -247,10 +270,11 @@ main { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-muted);
-  margin: 1.4rem 0 0.3rem;
+  margin: 0.9rem 0 0.3rem;
   padding: 0 0.75rem;
 }
-.browse-group-heading:first-child { margin-top: 0; }
+.browse-category-heading + .browse-group-heading,
+.browse-group-heading:first-child { margin-top: 0.5rem; }
 
 .browse-row {
   display: flex;
